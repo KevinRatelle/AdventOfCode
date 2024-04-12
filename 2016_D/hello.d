@@ -12,7 +12,7 @@ void main()
 
     auto split_string = s.split(", ");
 
-    uint total = ComputeResult(split_string);
+    uint total = ComputeResult_PartB(split_string);
     writefln("total is : %d", total);
 
     file.close(); 
