@@ -1,23 +1,54 @@
 unit day1;
 
 interface
-(* function returning the max between two numbers *)
-function max(num1, num2: integer): integer;
+uses Sysutils;
+
+function compute_result(var f :  TextFile): longint;
 
 implementation
-function max(num1, num2: integer): integer;
+function compute_result(var f :  TextFile): longint;
+
+const
+	searched_value = 2020;
 
 var
-   (* local variable declaration *)
-   result: integer;
+	m: string;
+	inputs: array of integer;
+	i: integer;
+	j: integer;
+	found: boolean;
 
 begin
-   if (num1 > num2) then
-      result := num1
-   
-   else
-      result := num2;
-   max := result;
+	i := 0;
+	found := false;
+
+	while not eof(f) do
+	begin
+		ReadLn(f, m);
+		SetLength(inputs, i + 1);
+		inputs[i] := StrToInt(m);
+		i := i + 1;
+	end;
+
+	(* loop through all items to find the matching pair *)
+	for i := low(inputs) to high(inputs) do
+	begin
+		for j := i+1 to high(inputs) do
+		begin
+			if inputs[i] + inputs[j] = searched_value then
+			begin
+			compute_result := inputs[i] * inputs[j];
+				found := true;
+			end;
+
+			if found then
+				break;
+		end;
+
+		if found then
+			break;
+	end;
+
 end;
 
 end.
