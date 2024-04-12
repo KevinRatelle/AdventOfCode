@@ -6,7 +6,8 @@ println("hello world")
 count = 0
 
 open("day1.txt", "r") do f
-	global count = compute_result(f)
+	is_part_b = true
+	global count = compute_result(f, is_part_b)
 end
 
 println("$count")
