@@ -1,0 +1,16 @@
+*.exe
+*.o
+*.obj
+*.sln
+*.vfproj
+*.u2d
+*.vsidx
+*.lock
+*.suo
+*.mod
+*.ppu
+
+zig-cache
+zig-out
+*.vs
+x64
