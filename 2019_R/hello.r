@@ -1,7 +1,11 @@
 
 # test in R
+
+source("day1.r")
+
 myData = read.delim("day1.txt", header = FALSE)
 
-val <- floor(myData/3) - 2
+is_part_b = TRUE
+res =compute_result(myData, is_part_b)
 
-print(sum(val))
+print(res)
