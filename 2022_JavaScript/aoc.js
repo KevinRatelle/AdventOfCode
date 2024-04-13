@@ -6,7 +6,8 @@ fs.readFile('day1.txt', (err, inputD) =>
 {
 	if (err) throw err;
 
-	var result = compute_result(inputD.toString());
+	let is_part_b = true;
+	var result = compute_result(inputD.toString(), is_part_b);
 
 	console.log(result);
  })
