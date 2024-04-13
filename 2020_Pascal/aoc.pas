@@ -8,11 +8,13 @@ const
 var
 	f : TextFile;
 	result : longint;
+	is_part_b : boolean;
 
 begin
 	assign(f, file_name);
 	reset(f);
 
-	result := compute_result(f);
+	is_part_b := true;
+	result := compute_result(f, is_part_b);
 	writeln(result)
 end.

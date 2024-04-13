@@ -3,10 +3,10 @@ unit day1;
 interface
 uses Sysutils;
 
-function compute_result(var f :  TextFile): longint;
+function compute_result(var f:  TextFile; is_part_b: boolean): longint;
 
 implementation
-function compute_result(var f :  TextFile): longint;
+function compute_result(var f :  TextFile; is_part_b: boolean): longint;
 
 const
 	searched_value = 2020;
@@ -14,8 +14,7 @@ const
 var
 	m: string;
 	inputs: array of integer;
-	i: integer;
-	j: integer;
+	i, j, k: integer;
 	found: boolean;
 
 begin
@@ -35,10 +34,27 @@ begin
 	begin
 		for j := i+1 to high(inputs) do
 		begin
-			if inputs[i] + inputs[j] = searched_value then
+			if is_part_b then
 			begin
-			compute_result := inputs[i] * inputs[j];
-				found := true;
+				for k := j+1 to high(inputs) do
+				begin
+					if inputs[i] + inputs[j] + inputs[k] = searched_value then
+					begin
+						compute_result := inputs[i] * inputs[j] * inputs[k];
+						found := true;
+					end;
+
+					if found then
+						break;
+				end;
+			end
+			else
+			begin
+				if inputs[i] + inputs[j] = searched_value then
+				begin
+					compute_result := inputs[i] * inputs[j];
+					found := true;
+				end;
 			end;
 
 			if found then
