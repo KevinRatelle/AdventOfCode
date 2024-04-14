@@ -3,7 +3,7 @@ import std.file;
 import std.array;
 import std.stdio;
 
-import day4;
+import day4b;
 
 void main()
 {
