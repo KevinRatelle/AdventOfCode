@@ -30,19 +30,23 @@ string ComputeResult(string[] split_string)
 {
 	uint total = 0;
 
-	foreach(ref string str; split_string)
+	for(int row = 0; row < split_string.length; row+=3)
 	{
-		auto lengths_str = str.split();
-		int[3] lengths;
-		for(int i = 0; i < 3; i++)
-		{
-			lengths[i] = to!int(lengths_str[i]);
-		}
+		auto row1 = split_string[row].split();
+		auto row2 = split_string[row+1].split();
+		auto row3 = split_string[row+2].split();
 
-		if (TriangleIsPossible(lengths))
+		for (int col = 0; col < 3; col++)
 		{
-			writefln("Possible is : %d %d %d", lengths[0], lengths[1], lengths[2]);
-			total++;
+			int[3] lengths;
+			lengths[0] = to!int(row1[col]);
+			lengths[1] = to!int(row2[col]);
+			lengths[2] = to!int(row3[col]);
+
+			if (TriangleIsPossible(lengths))
+			{
+				total++;
+			}
 		}
 	}
 
