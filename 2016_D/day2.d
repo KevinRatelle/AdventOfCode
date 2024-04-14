@@ -41,48 +41,68 @@ struct Location
                 break;
             }
         }
-
-        Clamp();
     }
 
-    void Clamp()
+    bool IsValid() const
     {
-        x = min(max(0,x), 2);
-        y = min(max(0,y), 2);
+        return ( abs(x) + abs(y) ) <= 2;
     }
+
+    string ButtonValue() const
+    {
+        const int y_off = (abs(y) == 1) ? 4 : 6;
+        const int result = 7 + x + y_off * y;
+
+        if (result == 10)
+        {
+            return "A";
+        }
+        if (result == 11)
+        {
+            return "B";
+        }
+        if (result == 12)
+        {
+            return "C";
+        }
+        if (result == 13)
+        {
+            return "D";
+        }
+
+        assert(result < 10 && result > 0);
+        return result.to!string();
+    }
+
 }
 
-char ButtonValue(Location location)
-{
-    return to!char(location.x + 1 + 3 * location.y);
-}
 
 Location Move(ref string directions, ref Location location)
 {
     foreach(char dir; directions)
     {
-        location.Move(dir);
+        Location loc_copy = location;
+        loc_copy.Move(dir);
+
+        if (loc_copy.IsValid())
+        {
+            location = loc_copy;
+        }
     }
 
     return location;
 }
 
-uint ComputeResult(string[] split_string)
+string ComputeResult(string[] split_string)
 {
-    uint val = 0;
-    Location location = Location(1,1);
+    string output;
+    Location location = Location(0,0);
 
     foreach(ref string str; split_string)
     {
         Move(str, location);
-        val = val * 10 + ButtonValue(location);
+        output ~= location.ButtonValue();
     }
 
-	return val;
-}
-
-uint ComputeResult_PartB(string[] split_string)
-{
-    uint val = 0;
-	return val;
+	return output;
 }

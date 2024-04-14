@@ -17,8 +17,8 @@ void main()
         split_string ~= line;
     }
 
-    uint total = ComputeResult(split_string);
-    writefln("total is : %d", total);
+    const string result = ComputeResult(split_string);
+    writefln("Result is : %s", result);
 
     file.close(); 
 }
