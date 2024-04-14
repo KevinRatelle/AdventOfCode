@@ -3,11 +3,11 @@ import std.file;
 import std.array;
 import std.stdio;
 
-import day2;
+import day3;
 
 void main()
 {
-    File file = File("day2.txt", "r");
+    File file = File("day3.txt", "r");
 
     string[] split_string;
 
