@@ -42,13 +42,13 @@ struct CharacterOccurenceList
 
 	char most_frequent() const
 	{
-		int max = 0;
+		int min = int.max;
 		char output;
 		foreach(CharacterOccurence occ; m_char_occ)
 		{
-			if (occ.m_occurence > max)
+			if (occ.m_occurence < min)
 			{
-				max = occ.m_occurence;
+				min = occ.m_occurence;
 				output = occ.m_char;
 			}
 		}
