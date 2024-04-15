@@ -4,7 +4,7 @@ import std.conv;
 import std.array;
 import std.stdio;
 
-bool TriangleIsPossible(int[] lengths)
+bool triangle_is_possible(int[] lengths)
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -26,7 +26,7 @@ bool TriangleIsPossible(int[] lengths)
 	return true;
 }
 
-string ComputeResult(string[] split_string)
+string compute_result(string[] split_string)
 {
 	uint total = 0;
 
@@ -43,7 +43,7 @@ string ComputeResult(string[] split_string)
 			lengths[1] = to!int(row2[col]);
 			lengths[2] = to!int(row3[col]);
 
-			if (TriangleIsPossible(lengths))
+			if (triangle_is_possible(lengths))
 			{
 				total++;
 			}

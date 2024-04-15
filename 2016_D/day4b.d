@@ -6,7 +6,7 @@ import std.stdio;
 import std.algorithm;
 
 
-void Decrypt(char[][] lowercases, string sector)
+void decrypt(char[][] lowercases, string sector)
 {
 	int sector_id = sector.to!int();
 	foreach(ref char[] lowercase; lowercases)
@@ -24,9 +24,9 @@ void Decrypt(char[][] lowercases, string sector)
 
 }
 
-bool IsRightRoom(char[][] lowercases, string sector)
+bool is_right_room(char[][] lowercases, string sector)
 {
-	Decrypt(lowercases, sector);
+	decrypt(lowercases, sector);
 
 	if (lowercases[0].length >= 5 &&lowercases[0][0..5] == "north")
 	{
@@ -43,7 +43,7 @@ bool IsRightRoom(char[][] lowercases, string sector)
 	return false;
 }
 
-bool ComputeLineValue(string* line, out string sector_name)
+bool compute_line_value(string* line, out string sector_name)
 {
 	auto splitted = (*line).split("-");
 
@@ -56,7 +56,7 @@ bool ComputeLineValue(string* line, out string sector_name)
 	string sector_checksum = splitted[splitted.length-1];
 	string sector = sector_checksum.split("[")[0];
 
-	if (IsRightRoom(lowercases, sector))
+	if (is_right_room(lowercases, sector))
 	{
 		sector_name = sector;
 		return true;
@@ -64,12 +64,12 @@ bool ComputeLineValue(string* line, out string sector_name)
 	return false;
 }
 
-string ComputeResult(string[] split_string)
+string compute_result(string[] split_string)
 {
 	string output;
 	foreach(ref string line; split_string)
 	{
-		if (ComputeLineValue(&line, output))
+		if (compute_line_value(&line, output))
 		{
 			break;
 		}

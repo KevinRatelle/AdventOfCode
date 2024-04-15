@@ -12,7 +12,7 @@ struct Location
 	int x = 0;
 	int y = 0;
 
-    void Move(char direction)
+    void move(char direction)
     {
         switch(direction)
         {
@@ -43,12 +43,12 @@ struct Location
         }
     }
 
-    bool IsValid() const
+    bool is_valid() const
     {
         return ( abs(x) + abs(y) ) <= 2;
     }
 
-    string ButtonValue() const
+    string button_value() const
     {
         const int y_off = (abs(y) == 1) ? 4 : 6;
         const int result = 7 + x + y_off * y;
@@ -77,31 +77,29 @@ struct Location
 }
 
 
-Location Move(ref string directions, ref Location location)
+void move(ref string directions, ref Location location)
 {
     foreach(char dir; directions)
     {
         Location loc_copy = location;
-        loc_copy.Move(dir);
+        loc_copy.move(dir);
 
-        if (loc_copy.IsValid())
+        if (loc_copy.is_valid())
         {
             location = loc_copy;
         }
     }
-
-    return location;
 }
 
-string ComputeResult(string[] split_string)
+string compute_result(string[] split_string)
 {
     string output;
     Location location = Location(0,0);
 
     foreach(ref string str; split_string)
     {
-        Move(str, location);
-        output ~= location.ButtonValue();
+        move(str, location);
+        output ~= location.button_value();
     }
 
 	return output;

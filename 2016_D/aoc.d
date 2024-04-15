@@ -17,7 +17,7 @@ void main()
         split_string ~= line;
     }
 
-    const string result = ComputeResult(split_string[0]);
+    const string result = compute_result(split_string[0]);
     writefln("Result is : %s", result);
 
     file.close(); 
