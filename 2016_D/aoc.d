@@ -3,11 +3,11 @@ import std.file;
 import std.array;
 import std.stdio;
 
-import day4b;
+import day5;
 
 void main()
 {
-    File file = File("day4.txt", "r");
+    File file = File("day5.txt", "r");
 
     string[] split_string;
 
@@ -17,7 +17,7 @@ void main()
         split_string ~= line;
     }
 
-    const string result = ComputeResult(split_string);
+    const string result = ComputeResult(split_string[0]);
     writefln("Result is : %s", result);
 
     file.close(); 
