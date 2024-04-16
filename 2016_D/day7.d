@@ -6,15 +6,22 @@ import std.stdio;
 import std.regex;
 import std.typecons : Yes;
 
-bool is_abba(string part)
+bool is_aba_bab(string s, string[] arr)
 {
-	for (int i = 0; i < part.length-3; i++)
+	for (int i = 1; i < s.length-1; i++)
 	{
-		if (part[i] != part[i+1] &&
-			part[i+1] == part[i+2] &&
-			part[i] == part[i+3])
+		if (s[i-1] == s[i+1])
 		{
-			return true;
+			foreach (string a; arr)
+			{
+				for (int j = 1; j < a.length-1; j++)
+				{
+					if (a[j-1] == s[i] && a[j+1] == s[i] && a[j] == s[i-1])
+					{
+						return true;
+					}
+				}
+			}
 		}
 	}
 
@@ -26,28 +33,34 @@ bool supports_TLS(string line)
 	auto pattern = regex(`([\[\]])`);
 	auto parts = line.splitter(pattern);
 
+	string[] supernet;
+	string[] hypernet;
+
 	bool is_bracket = false;
-	bool return_value = false;
 
 	foreach(string p; parts)
 	{
-		bool bAbba = is_abba(p);
-		writefln("%s", p);
-
-		if (bAbba)
+		if (is_bracket)
 		{
-			if (is_bracket)
-			{
-				return false;
-			}
-
-			return_value = true;
+			supernet ~= p;
+		}
+		else
+		{
+			hypernet ~= p;
 		}
 
 		is_bracket = !is_bracket;
 	}
 
-	return return_value;
+	foreach(string s;  supernet)
+	{
+		if (is_aba_bab(s, hypernet))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 string compute_result(string[] inputs)
