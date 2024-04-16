@@ -4,10 +4,9 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-string decompress(string line)
+ulong decompressed_size(string line)
 {
-	char[] output;
-
+	ulong size = 0;
 	int index = 0;
 	while(index < line.length)
 	{
@@ -24,23 +23,17 @@ string decompress(string line)
 
 			index = cast(int) end_index+1;
 
-			string to_copy = line[index..index+char_count];
-
-			for (int i = 0; i < repeat; i++)
-			{
-				output ~= to_copy;
-			}
+			size += repeat * char_count;
 
 			index+=char_count;
 
 			continue;
 		}
 
-		output ~= current;
 		index++;
 	}
 
-	return output.to!string();
+	return size;
 }
 
 string compute_result(string[] inputs)
@@ -49,11 +42,9 @@ string compute_result(string[] inputs)
 
 	foreach(ref string line; inputs)
 	{
-		string decompressed = decompress(line[0..$-1]);
-
-		writefln("%s : %d", decompressed, decompressed.length);
-
-		output+=decompressed.length;
+		ulong size = decompressed_size(line[0..$-1]);
+		writefln("%d", size);
+		output+=size;
 	}
 
 	return output.to!string();
