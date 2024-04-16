@@ -23,13 +23,15 @@ ulong decompressed_size(string line)
 
 			index = cast(int) end_index+1;
 
-			size += repeat * char_count;
+			ulong inner_size = decompressed_size(line[index..index+char_count]);
+			size += repeat * inner_size;
 
-			index+=char_count;
+			index += char_count;
 
 			continue;
 		}
 
+		size++;
 		index++;
 	}
 
@@ -38,12 +40,11 @@ ulong decompressed_size(string line)
 
 string compute_result(string[] inputs)
 {
-	int output = 0;
+	ulong output = 0;
 
 	foreach(ref string line; inputs)
 	{
 		ulong size = decompressed_size(line[0..$-1]);
-		writefln("%d", size);
 		output+=size;
 	}
 
