@@ -5,13 +5,17 @@ import std.stdio;
 import std.string;
 import std.algorithm;
 
+struct Output
+{
+	int m_index;
+	bool m_is_bot = false;
+}
+
 struct Bot
 {
-	bool m_low_to_bot;
-	int m_low;
+	Output m_low;
+	Output m_high;
 
-	bool m_high_to_bot;
-	int m_high;
 	int[2] m_vals = [-1, -1];
 
 	void receive(int val)
@@ -35,61 +39,69 @@ struct Bot
 	{
 		return contains(a) && contains(b);
 	}
+
+	void set_low(const string type, const int value)
+	{
+		if (type == "bot")
+		{
+			m_low.m_is_bot = true;
+		}
+
+		m_low.m_index = value;
+	}
+
+	void set_high(const string type, const int value)
+	{
+		if (type == "bot")
+		{
+			m_high.m_is_bot = true;
+		}
+
+		m_high.m_index = value;
+	}
 }
 
-Bot[] parse_instruction(Bot[] bots, string instruction)
+void resize_if_needed(Bot[]* bots, const int index)
+{
+	if (bots.length <= index)
+	{
+		*bots ~= new Bot[index - bots.length + 1];
+	}
+}
+
+void parse_instruction(Bot[]* bots, string instruction)
 {
 	auto splitted = instruction.split();
 
 	if (splitted[0] == "value")
 	{
-		int bot_index = splitted[5].to!int();
-		int value = splitted[1].to!int();
-
-		if (bots.length <= bot_index)
-		{
-			bots ~= new Bot[bot_index - bots.length + 1];
-		}
-
-		bots[bot_index].receive(value);
+		const int bot_index = splitted[5].to!int();
+		const int value = splitted[1].to!int();
+		resize_if_needed(bots, bot_index);
+		(*bots)[bot_index].receive(value);
 	}
 	else
 	{
 		int bot_index = splitted[1].to!int();
 		int low = splitted[6].to!int();
 		int high = splitted[11].to!int();
-
-		if (bots.length <= bot_index)
-		{
-			bots ~= new Bot[bot_index - bots.length + 1];
-		}
-
-		bots[bot_index].m_low = low;
-		bots[bot_index].m_high = high;
-
-		if (splitted[5] == "bot")
-		{
-			bots[bot_index].m_low_to_bot = true;
-		}
-		else
-		{
-			bots[bot_index].m_low_to_bot = false;
-		}
-
-		if (splitted[10] == "bot")
-		{
-			bots[bot_index].m_high_to_bot = true;
-		}
-		else
-		{
-			bots[bot_index].m_high_to_bot = false;
-		}
+		resize_if_needed(bots, bot_index);
+		(*bots)[bot_index].set_low(splitted[5], low);
+		(*bots)[bot_index].set_high(splitted[10], high);
 	}
-
-	return bots;
 }
 
-Bot[] tick(Bot[] bots)
+void set_output(int[]* output, const int index, const int value)
+{
+	if (index >= output.length)
+	{
+		*output ~= new int[index - output.length + 1];
+	}
+
+	(*output)[index] = value;
+}
+
+Bot[] tick(Bot[] bots, int[]* output)
 {
 	Bot[] bots_out = bots.dup;
 
@@ -98,22 +110,24 @@ Bot[] tick(Bot[] bots)
 		Bot bot = bots[i];
 		if (bot.m_vals[0] != -1 && bot.m_vals[1] != -1)
 		{
-			if (bot.m_low_to_bot)
+			const int minimum = min(bot.m_vals[0], bot.m_vals[1]);
+			if (bot.m_low.m_is_bot)
 			{
-				bots_out[bot.m_low].receive(min(bot.m_vals[0], bot.m_vals[1]));
+				bots_out[bot.m_low.m_index].receive(minimum);
 			}
 			else
 			{
-
+				set_output(output, bot.m_low.m_index, minimum);
 			}
 
-			if (bot.m_high_to_bot)
+			const int maximum = max(bot.m_vals[0], bot.m_vals[1]);
+			if (bot.m_high.m_is_bot)
 			{
-				bots_out[bot.m_high].receive(max(bot.m_vals[0], bot.m_vals[1]));
+				bots_out[bot.m_high.m_index].receive(maximum);
 			}
 			else
 			{
-
+				set_output(output, bot.m_high.m_index, maximum);
 			}
 
 			bots_out[i].m_vals[0] = -1;
@@ -137,12 +151,25 @@ int search_bots(Bot[] bots)
 	return -1;
 }
 
+bool is_done(Bot[] bots)
+{
+	for(int i = 0; i < bots.length; i++)
+	{
+		if (!bots[i].contains(-1, -1))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void print_bots(Bot[] bots, int[] output)
 {
 	writefln("----- printing bots -----");
 	for(int i = 0; i < bots.length; i++)
 	{
-		writefln("Bot %d : Low - %d, high - %d, contains %d and %d", i, bots[i].m_low, bots[i].m_high, bots[i].m_vals[0], bots[i].m_vals[1]);
+		writefln("Bot %d : Low - %d, high - %d, contains %d and %d", i, bots[i].m_low.m_index, bots[i].m_high.m_index, bots[i].m_vals[0], bots[i].m_vals[1]);
 	}
 
 	foreach(int o; output)
@@ -156,22 +183,23 @@ void print_bots(Bot[] bots, int[] output)
 string compute_result(string[] inputs)
 {
 	Bot[] bots;
-	int[] output;
 
 	foreach(ref string line; inputs)
 	{
-		bots = parse_instruction(bots, line);
+		parse_instruction(&bots, line);
+	}
+
+	int[] output;
+	print_bots(bots, output);
+
+	while (!is_done(bots))
+	{
+		bots = tick(bots, &output);
 	}
 
 	print_bots(bots, output);
 
-	int bot_index = -1;
-	while (bot_index == -1)
-	{
-		bot_index = search_bots(bots);
-		bots = tick(bots);
-		print_bots(bots, output);
-	}
+	int multiplication = output[0] * output[1] * output[2];
 
-	return bot_index.to!string();
+	return multiplication.to!string();
 }
