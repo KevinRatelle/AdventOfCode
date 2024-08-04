@@ -8,7 +8,7 @@ program main
 	integer :: io
 	logical :: is_part_b = .false.
 
-	open(newunit=io, file="day2.txt")
+	open(newunit=io, file="data/day2.txt")
 	call compute_solution(io, is_part_b)
 	close(io)
 
