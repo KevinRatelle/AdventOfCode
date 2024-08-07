@@ -1,6 +1,4 @@
 
-include "core.f90"
-
 module Day1
 	use Core
 
