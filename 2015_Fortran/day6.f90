@@ -61,46 +61,58 @@ contains
 			b = b(9:)
 			call DecodeMinMax(a, range(1), range(2))
 			call DecodeMinMax(b, range(3), range(4))
-			! range = range + 1
 		end subroutine DecodeRange
 
-		subroutine ExecuteOnGrid(lights, string, option)
+		subroutine ExecuteOnGrid(lights, string, option, is_part_b)
 			implicit none
 			integer, dimension(1000,1000), intent(inout) :: lights
+			logical, intent(in) :: is_part_b
 			character(*), intent(in) :: string
 			integer, intent(in) :: option
-			integer value
+			integer :: change
 
 			integer :: r(4)
 			call DecodeRange(string, r)
 
-			if (option == TOGGLE) then
-				lights(r(1):r(3), r(2):r(4)) = 1 - (lights(r(1):r(3), r(2):r(4)))
-			else if (option == ON) then
-				lights(r(1):r(3), r(2):r(4)) = 1
-			else if (option == OFF) then
-				lights(r(1):r(3), r(2):r(4)) = 0
+			if (is_part_b) then
+				if (option == TOGGLE) then
+					change = 2
+				else if (option == ON) then
+					change = 1
+				else if (option == OFF) then
+					change = -1
+				end if
+				lights(r(1):r(3), r(2):r(4)) = max(lights(r(1):r(3), r(2):r(4)) + change, 0)
+			else
+				if (option == TOGGLE) then
+					lights(r(1):r(3), r(2):r(4)) = 1 - (lights(r(1):r(3), r(2):r(4)))
+				else if (option == ON) then
+					lights(r(1):r(3), r(2):r(4)) = 1
+				else if (option == OFF) then
+					lights(r(1):r(3), r(2):r(4)) = 0
+				end if
 			end if
 		end subroutine ExecuteOnGrid
 
-		subroutine ExecuteLine(string, lights)
+		subroutine ExecuteLine(string, lights, is_part_b)
 			implicit none
 			character(*), intent(in) :: string
 			integer, dimension(1000,1000), intent(inout) :: lights
+			logical, intent(in) :: is_part_b
 			character(len=:), allocatable :: a, b, c
 
 			call SplitString(string, a, b, " ")
 			if (a == 'turn') then
 				call SplitString(b, a, c, " ")
 				if (a == 'on') then
-					call ExecuteOnGrid(lights, c, ON)
+					call ExecuteOnGrid(lights, c, ON, is_part_b)
 				else
-					call ExecuteOnGrid(lights, c, OFF)
+					call ExecuteOnGrid(lights, c, OFF, is_part_b)
 				end if
 			end if
 
 			if (a == 'toggle') then
-				call ExecuteOnGrid(lights, b, TOGGLE)
+				call ExecuteOnGrid(lights, b, TOGGLE, is_part_b)
 			end if
 		end subroutine ExecuteLine
 
@@ -125,7 +137,7 @@ contains
 				exit
 			end if
 
-			call ExecuteLine(line_trimmed, lights)
+			call ExecuteLine(line_trimmed, lights, is_part_b)
 		end do
 
 		write(*,*) "The result is", sum(lights)
