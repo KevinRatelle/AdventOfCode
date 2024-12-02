@@ -35,6 +35,28 @@ fn bool is_report_safe(String[] report)
     return true;
 }
 
+fn bool is_report_safe_with_dampener(String[] report)
+{
+    if (is_report_safe(report))
+    {
+        return true;
+    }
+
+    for(int i = 0; i < report.len; i++)
+    {
+        List(<String>) copy;
+        copy.add_array(report);
+        copy.remove_at(i);
+
+        if (is_report_safe(copy.to_tarray()))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 fn void process(String[] lines, bool is_part_b)
 {
     uint safe_count = 0;
@@ -47,7 +69,14 @@ fn void process(String[] lines, bool is_part_b)
             break;
         }
 
-        if (is_report_safe(values))
+        if (is_part_b)
+        {
+            if (is_report_safe_with_dampener(values))
+            {
+                safe_count++;
+            }
+        }
+        else if (is_report_safe(values))
         {
             safe_count++;
         }
