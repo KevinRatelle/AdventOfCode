@@ -24,11 +24,6 @@ fn uint! compute_similarity(List(<int>) a, List(<int>) b)
     quicksort(a);
     quicksort(b);
 
-    if (a.len() != b.len())
-    {
-        return ComputationFailed.ARRAYS_NOT_SAME_LENGTH?;
-    }
-
     uint sum = 0;
     for (uint i = 0; i < a.len(); i++)
     {
