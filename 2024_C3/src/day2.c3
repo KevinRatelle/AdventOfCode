@@ -1,5 +1,6 @@
 
 import std::io;
+import std::collections::list;
 
 fn bool is_report_safe(String[] report)
 {
