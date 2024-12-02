@@ -9,8 +9,12 @@
 *.suo
 *.mod
 *.ppu
+*/obj
+*.lib
+*.pdb
 
 zig-cache
 zig-out
+*build
 *.vs
 x64
