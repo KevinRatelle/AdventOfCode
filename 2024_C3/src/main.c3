@@ -18,7 +18,8 @@ fn int main(String[] args)
 	String[] lines = data.split("\r\n");
 	defer free(lines);
 
-	day1::process(lines);
+	bool is_part_b = true;
+	day1::process(lines, is_part_b);
 
 	return 0;
 }

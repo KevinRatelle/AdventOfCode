@@ -8,6 +8,38 @@ fault ComputationFailed
     ARRAYS_NOT_SAME_LENGTH
 }
 
+fn uint count_occurences(List(<int>) array, int value)
+{
+    uint occurence_count = 0;
+    for (uint i = 0; i < array.len(); i++)
+    {
+        occurence_count += array[i] == value ? 1 : 0;
+    }
+
+    return occurence_count;
+}
+
+fn uint! compute_similarity(List(<int>) a, List(<int>) b)
+{
+    quicksort(a);
+    quicksort(b);
+
+    if (a.len() != b.len())
+    {
+        return ComputationFailed.ARRAYS_NOT_SAME_LENGTH?;
+    }
+
+    uint sum = 0;
+    for (uint i = 0; i < a.len(); i++)
+    {
+        int val = a[i];
+        uint count = count_occurences(b, val);
+        sum += count * val;
+    }
+
+    return sum;
+}
+
 fn uint! compute_total(List(<int>) a, List(<int>) b)
 {
     quicksort(a);
@@ -28,7 +60,7 @@ fn uint! compute_total(List(<int>) a, List(<int>) b)
     return sum;
 }
 
-fn void process(String[] lines)
+fn void process(String[] lines, bool is_part_b)
 {
     List(<int>) first_array;
     List(<int>) second_array;
@@ -60,7 +92,16 @@ fn void process(String[] lines)
         second_array.push(b);
     }
 
-    uint! total = compute_total(first_array, second_array);
+    uint! total = 0;
+    if (is_part_b)
+    {
+        total = compute_similarity(first_array, second_array);
+    }
+    else
+    {
+        total = compute_total(first_array, second_array);
+    }
+
     if (catch err = total)
     {
         return;
