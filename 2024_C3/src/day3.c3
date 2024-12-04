@@ -43,7 +43,12 @@ fn void process(String data, bool is_part_b)
 
     if (is_part_b)
     {
-
+        String[] split = data.split("do()");
+        foreach(data_chunk : split)
+        {
+            String[] data_pair = data_chunk.split("don't()");
+            total += compute_mul(data_pair[0]);
+        }
     }
     else
     {
