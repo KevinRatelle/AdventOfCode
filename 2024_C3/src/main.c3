@@ -1,13 +1,13 @@
 module m_2024_c3;
 import std::io;
 import std::collections::list;
-import day3;
+import day4;
 
 fn int main(String[] args)
 {
 	io::printn("Hello, World!");
 
-	String file_name = "resources/day3.txt";
+	String file_name = "resources/day4.txt";
 	String! data = (String) io::file::load_new(file_name);
 	if (catch error = data)
 	{
@@ -16,7 +16,7 @@ fn int main(String[] args)
 	defer free(data);
 
 	bool is_part_b = true;
-	day3::process(data, is_part_b);
+	day4::process(data, is_part_b);
 
 	return 0;
 }
