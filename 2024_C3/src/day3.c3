@@ -1,6 +1,6 @@
 import std::io;
 
-fn void process(String data, bool is_part_b)
+fn usz compute_mul(String data)
 {
     usz total = 0;
 
@@ -32,6 +32,22 @@ fn void process(String data, bool is_part_b)
         }
 
         total += a * b;
+    }
+
+    return total;
+}
+
+fn void process(String data, bool is_part_b)
+{
+    usz total = 0;
+
+    if (is_part_b)
+    {
+
+    }
+    else
+    {
+        total = compute_mul(data);
     }
 
     io::printfn("Total is %d", total);
