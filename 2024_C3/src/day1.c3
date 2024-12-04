@@ -55,8 +55,11 @@ fn uint! compute_total(List(<int>) a, List(<int>) b)
     return sum;
 }
 
-fn void process(String[] lines, bool is_part_b)
+fn void process(String data, bool is_part_b)
 {
+    String[] lines = data.split("\r\n");
+	defer free(lines);
+
     List(<int>) first_array;
     List(<int>) second_array;
 

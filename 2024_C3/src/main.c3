@@ -15,8 +15,6 @@ fn int main(String[] args)
 	}
 	defer free(data);
 
-	String[] lines = data.split("\r\n");
-	defer free(lines);
 
 	bool is_part_b = true;
 	day2::process(lines, is_part_b);
