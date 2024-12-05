@@ -15,7 +15,7 @@ fn int main(String[] args)
 	}
 	defer free(data);
 
-	bool is_part_b = false;
+	bool is_part_b = true;
 	day5::process(data, is_part_b);
 
 	return 0;
