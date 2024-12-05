@@ -28,6 +28,26 @@ fn bool is_order_valid(List(<Order>) orders, List(<uint>) chain)
     return true;
 }
 
+fn void reorder_chain(List(<Order>) orders, List(<uint>) chain)
+{
+    while (!is_order_valid(orders, chain))
+    {
+        for (uint i = 0; i < (chain.len()-1); i++)
+        {
+            uint next = i+1;
+            foreach(Order order : orders)
+            {
+                if (order.before == chain[next] && order.after == chain[i])
+                {
+                    uint buf = chain[next];
+                    chain[next] = chain[i];
+                    chain[i] = buf;
+                }
+            }
+        }
+    }
+}
+
 
 fn void process(String data, bool is_part_b)
 {
@@ -82,8 +102,15 @@ fn void process(String data, bool is_part_b)
                 chain.push(page);
             }
 
-            if (is_order_valid(orders, chain))
+            if (!is_part_b && is_order_valid(orders, chain))
             {
+                usz middle_index = chain.len() / 2;
+                uint middle = chain[middle_index];
+                count += middle;
+            }
+            if (is_part_b && !is_order_valid(orders, chain))
+            {
+                reorder_chain(orders, chain);
                 usz middle_index = chain.len() / 2;
                 uint middle = chain[middle_index];
                 count += middle;
