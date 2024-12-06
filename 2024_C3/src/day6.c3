@@ -122,9 +122,8 @@ fn bool walk_one_step(String[] map, Cursor* cursor, bool* has_loop = null)
             }
         }
 
+        // just rotate, do not advance as it might be in front of another blocker
         cursor.rotate();
-        cursor.x += cursor.dir_x;
-        cursor.y += cursor.dir_y;
     }
     else
     {
