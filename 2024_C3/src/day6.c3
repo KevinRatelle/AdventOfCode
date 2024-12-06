@@ -33,10 +33,10 @@ fn void Cursor.rotate(Cursor* this)
     }
 }
 
-// x = 1, y = 0
-// x = 0, y = 1
-// x = -1, y = 0
-// x = 0, y = -1
+fn bool Cursor.is_horizontal(Cursor* this)
+{
+    return this.dir_y == 0;
+}
 
 fn uint count_walked(String[] map)
 {
@@ -55,9 +55,12 @@ fn uint count_walked(String[] map)
     return total;
 }
 
-fn bool walk_one_step(String[] map, Cursor* cursor)
+fn bool walk_one_step(String[] map, Cursor* cursor, bool* has_loop = null)
 {
-    map[cursor.y][cursor.x] = 'X';
+    if (has_loop == null)
+    {
+        map[cursor.y][cursor.x] = 'X';
+    }
 
     Cursor target = *cursor;
     target.x += target.dir_x;
@@ -70,8 +73,55 @@ fn bool walk_one_step(String[] map, Cursor* cursor)
         return true;
     }
 
-    if (map[target.y][target.x] == '#')
+    if (map[target.y][target.x] == '#' || map[target.y][target.x] == 'O')
     {
+        if (has_loop != null)
+        {
+            switch (map[cursor.y][cursor.x])
+            {
+                case '.':
+                {
+                    if (cursor.is_horizontal())
+                    {
+                        map[cursor.y][cursor.x] = '-';
+                    }
+                    else
+                    {
+                        map[cursor.y][cursor.x] = '|';
+                    }
+                }
+                case '+':
+                {
+                    *has_loop = true;
+                    return true;
+                }
+                case '-':
+                {
+                    if (cursor.is_horizontal())
+                    {
+                        *has_loop = true;
+                        return true;
+                    }
+                    else
+                    {
+                        map[cursor.y][cursor.x] = '+';
+                    }
+                }
+                case '|':
+                {
+                    if (cursor.is_horizontal())
+                    {
+                        map[cursor.y][cursor.x] = '+';
+                    }
+                    else
+                    {
+                        *has_loop = true;
+                        return true;
+                    }
+                }
+            }
+        }
+
         cursor.rotate();
         cursor.x += cursor.dir_x;
         cursor.y += cursor.dir_y;
@@ -91,6 +141,43 @@ fn void guard_walk(String[] map, Cursor cursor)
     {
         exits = walk_one_step(map, &cursor);
     }
+}
+
+fn bool guard_walk_detect_loop(String[] map, Cursor cursor)
+{
+    bool exits = false;
+    bool has_loop = false;
+    while(!exits)
+    {
+        exits = walk_one_step(map, &cursor, &has_loop);
+    }
+
+    return has_loop;
+}
+
+
+fn void clean_grid(String[] map)
+{
+    for(int i = 0; i < map.len; i++)
+    {
+        for(int j = 0; j < map[0].len; j++)
+        {
+            if (map[i][j] != '#')
+            {
+                map[i][j] = '.';
+            }
+        }
+    }
+}
+
+fn void print_grid(String[] map)
+{
+    io::printn("---------------------");
+    foreach(String line : map)
+    {
+        io::printn(line);
+    }
+    io::printn("                     ");
 }
 
 fn void process(String data, bool is_part_b)
@@ -114,8 +201,39 @@ fn void process(String data, bool is_part_b)
         }
     }
 
-    guard_walk(map, cursor);
+    uint count = 0;
+    if (is_part_b)
+    {
+        for(int i = 0; i < map.len; i++)
+        {         
+            io::printfn("Step %d or %d", i, map.len);
 
-    uint count = count_walked(map);
+            for(int j = 0; j < map[0].len; j++)
+            {
+                clean_grid(map);
+
+                if (map[i][j] == '#' || (i==cursor.y && j==cursor.x))
+                {
+                    continue;
+                }
+            
+                map[i][j] = 'O';
+
+                // cursor is copied, all good to start over multiple times
+                if (guard_walk_detect_loop(map, cursor))
+                {
+                    count++;
+                }
+
+                map[i][j] = '.';
+            }
+        }
+    }
+    else
+    {
+        guard_walk(map, cursor);
+        count = count_walked(map);
+    }
+
     io::printfn("Total is %d", count);
 }
