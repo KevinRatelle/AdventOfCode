@@ -4,6 +4,7 @@ const ascii = std.ascii;
 
 const MapKey = struct { m_row: u16, m_column: u16 };
 const Part = struct { m_value: u32, m_length: u16 };
+const Gear = struct { m_value: u32, m_neighbors: u8 };
 
 pub fn charToDigit(c: u8) u8 {
     const value = switch (c) {
@@ -13,7 +14,7 @@ pub fn charToDigit(c: u8) u8 {
     return value;
 }
 
-pub fn AppendDictionaries(line_index: u16, line: []const u8, symbol_map: *std.AutoHashMap(MapKey, u8), parts_map: *std.AutoHashMap(MapKey, Part)) !void {
+pub fn AppendDictionaries(comptime T: type, line_index: u16, line: []const u8, symbol_map: *std.AutoHashMap(MapKey, T), parts_map: *std.AutoHashMap(MapKey, Part)) !void {
     var index: u16 = 0;
     while (index < line.len) {
         var char: u8 = line[index];
@@ -25,7 +26,13 @@ pub fn AppendDictionaries(line_index: u16, line: []const u8, symbol_map: *std.Au
         // is a symbol
         const column: u16 = @intCast(index);
         if (!ascii.isDigit(char)) {
-            try symbol_map.put(MapKey{ .m_row = line_index, .m_column = column }, char);
+            if (T == u8) {
+                try symbol_map.put(MapKey{ .m_row = line_index, .m_column = column }, char);
+            } else {
+                if (char == '*') {
+                    try symbol_map.put(MapKey{ .m_row = line_index, .m_column = column }, Gear{ .m_value = 1, .m_neighbors = 0 });
+                }
+            }
             index += 1;
             continue;
         }
@@ -49,19 +56,23 @@ pub fn AppendDictionaries(line_index: u16, line: []const u8, symbol_map: *std.Au
     }
 }
 
-pub fn ComputeResult(in_stream: anytype, _: bool) !void {
+pub fn ComputeResult(in_stream: anytype, comptime is_part_b: bool) !void {
     var buf: [1024]u8 = undefined;
-
-    var symbol_map = std.AutoHashMap(MapKey, u8).init(std.heap.page_allocator);
+    const symbol_type = if (is_part_b) Gear else u8;
+    var symbol_map = std.AutoHashMap(MapKey, symbol_type).init(std.heap.page_allocator);
     defer symbol_map.deinit();
 
     var parts_map = std.AutoHashMap(MapKey, Part).init(std.heap.page_allocator);
     defer parts_map.deinit();
 
-    var total: u32 = 0;
+    var total: u64 = 0;
     var line_index: u16 = 0;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        try AppendDictionaries(line_index, line, &symbol_map, &parts_map);
+        if (is_part_b) {
+            try AppendDictionaries(Gear, line_index, line, &symbol_map, &parts_map);
+        } else {
+            try AppendDictionaries(u8, line_index, line, &symbol_map, &parts_map);
+        }
         line_index += 1;
     }
 
@@ -87,8 +98,14 @@ pub fn ComputeResult(in_stream: anytype, _: bool) !void {
                 const current_col: u16 = @intCast(col_tested);
                 const contains_key: bool = symbol_map.contains(MapKey{ .m_row = current_row, .m_column = current_col });
                 if (contains_key) {
-                    found_symbol = true;
-                    break;
+                    if (!is_part_b) {
+                        found_symbol = true;
+                        break;
+                    } else {
+                        const symbol: *Gear = symbol_map.getPtr(MapKey{ .m_row = current_row, .m_column = current_col }).?;
+                        symbol.*.m_value *= value;
+                        symbol.*.m_neighbors += 1;
+                    }
                 }
             }
 
@@ -101,5 +118,15 @@ pub fn ComputeResult(in_stream: anytype, _: bool) !void {
             total += value;
         }
     }
+
+    if (is_part_b) {
+        var symbolIt = symbol_map.valueIterator();
+        while (symbolIt.next()) |gear| {
+            if (gear.*.m_neighbors == 2) {
+                total += gear.*.m_value;
+            }
+        }
+    }
+
     std.debug.print("Le total est {}.\n", .{total});
 }

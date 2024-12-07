@@ -9,7 +9,7 @@ pub fn main() !void {
     const in_stream = buf_reader.reader();
 
     const start = std.time.nanoTimestamp();
-    const is_part_b = false;
+    const is_part_b = true;
     try day.ComputeResult(in_stream, is_part_b);
     const end = std.time.nanoTimestamp();
 
