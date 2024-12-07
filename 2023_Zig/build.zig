@@ -1,16 +1,15 @@
 const Builder = @import("std").Build;
 
-pub fn build(builder: *Builder) void
-{
-	const target = builder.standardTargetOptions(.{});
-	const optimize = builder.standardOptimizeOption(.{});
+pub fn build(builder: *Builder) void {
+    const target = builder.standardTargetOptions(.{});
+    const optimize = builder.standardOptimizeOption(.{});
 
-	const exe = builder.addExecutable(.{
-		.name = "Zig",
-		.root_source_file = .{ .path = "src/main.zig" },
-		.target = target,
-		.optimize = optimize,
-	});
+    const exe = builder.addExecutable(.{
+        .name = "Zig",
+        .root_source_file = builder.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
-	builder.installArtifact(exe);
+    builder.installArtifact(exe);
 }
