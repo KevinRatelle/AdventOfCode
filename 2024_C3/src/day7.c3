@@ -1,7 +1,7 @@
 import std::io;
 import std::collections::list;
 
-fn bool solve(List(<ulong>) values, ulong total, ulong current_total = 0, uint index = 0)
+fn bool solve(List(<ulong>) values, ulong total, ulong current_total, uint index)
 {
     // Brute force is an option. The number of combinations is 2^(N-1).
     // So for 12 items, it's 2^11 = 2048, which is still fine
@@ -75,7 +75,7 @@ fn void process(String data, bool is_part_b)
             values.push(val);
         }
 
-        if (solve(values, result))
+        if (solve(values, result, values[0], 1))
         {
             total += result;
         }
