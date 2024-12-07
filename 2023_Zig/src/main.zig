@@ -1,15 +1,15 @@
 const std = @import("std");
-const day = @import("day2.zig");
+const day = @import("day3.zig");
 
 pub fn main() !void {
-    var file = try std.fs.cwd().openFile("./data/Day2.txt", .{});
+    var file = try std.fs.cwd().openFile("./data/Day3.txt", .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
     const in_stream = buf_reader.reader();
 
     const start = std.time.nanoTimestamp();
-    const is_part_b = true;
+    const is_part_b = false;
     try day.ComputeResult(in_stream, is_part_b);
     const end = std.time.nanoTimestamp();
 
