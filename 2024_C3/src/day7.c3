@@ -1,7 +1,29 @@
+
 import std::io;
 import std::collections::list;
 
-fn bool solve(List(<ulong>) values, ulong total, ulong current_total, uint index)
+fn ulong concatenate(ulong a, ulong b)
+{
+    char[40] buf;
+    
+    String! slice = (String) io::bprintf(&buf, "%d%d", a, b);
+    if (catch err = slice)
+    {
+        io::printn("Error printing both longs into the same buffer.");
+        return 0;
+    }
+
+    ulong! result = slice.to_ulong();
+    if (catch err = result)
+    {
+        io::printn("Error converting concatenation to ulong.");
+        return 0;
+    }
+
+    return result;
+}
+
+fn bool solve(List(<ulong>) values, ulong total, ulong current_total, uint index, bool allow_concat)
 {
     // Brute force is an option. The number of combinations is 2^(N-1).
     // So for 12 items, it's 2^11 = 2048, which is still fine
@@ -11,22 +33,32 @@ fn bool solve(List(<ulong>) values, ulong total, ulong current_total, uint index
     if (index == (values.len() - 1))
     {
         return ((value * current_total) == total) ||
-               ((value + current_total) == total);
+               ((value + current_total) == total) ||
+               (allow_concat && (concatenate(current_total, value) == total));
     }
 
     uint next_index = index + 1;
     bool mult = false;
     bool add = false;
+    bool concat = false;
     if ((value * current_total) <= total)
     {
-        mult = solve(values, total, value * current_total, next_index);
+        mult = solve(values, total, value * current_total, next_index, allow_concat);
     }
     if ((value + current_total) <= total)
     {
-        add = solve(values, total, value + current_total, next_index);
+        add = solve(values, total, value + current_total, next_index, allow_concat);
+    }
+    if (allow_concat)
+    {
+        ulong concat_val = concatenate(current_total, value);
+        if (concat_val <= total)
+        {
+            concat = solve(values, total, concat_val, next_index, allow_concat);
+        }
     }
 
-    return add || mult;
+    return add || mult || concat;
 }
 
 fn void process(String data, bool is_part_b)
@@ -75,7 +107,7 @@ fn void process(String data, bool is_part_b)
             values.push(val);
         }
 
-        if (solve(values, result, values[0], 1))
+        if (solve(values, result, values[0], 1, is_part_b))
         {
             total += result;
         }
