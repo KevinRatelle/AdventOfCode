@@ -66,6 +66,7 @@ pub fn GetMaxCounts(grabs: []const u8) Counts {
 pub fn GetIdentifierIfValid(line: []const u8) !u32 {
     var it = std.mem.splitSequence(u8, line, ": ");
     const first_half: []const u8 = it.next().?;
+
     var it2 = std.mem.splitSequence(u8, first_half, " ");
     const game_string = it2.next().?;
     assert(std.mem.eql(u8, game_string, "Game"));
@@ -90,12 +91,33 @@ pub fn GetIdentifierIfValid(line: []const u8) !u32 {
     return game_number;
 }
 
-pub fn ComputeResult(in_stream: anytype, _: bool) !void {
+fn GetGamePower(line: []const u8) u32 {
+    var it = std.mem.splitSequence(u8, line, ": ");
+    const first_half: []const u8 = it.next().?;
+
+    assert(first_half.len > 0);
+
+    const second_half: []const u8 = it.next().?;
+    const counts = GetMaxCounts(second_half);
+
+    const blue: u32 = @intCast(counts.m_blue);
+    const green: u32 = @intCast(counts.m_green);
+    const red: u32 = @intCast(counts.m_red);
+
+    return blue * green * red;
+}
+
+pub fn ComputeResult(in_stream: anytype, is_part_b: bool) !void {
     var buf: [1024]u8 = undefined;
     var total: u32 = 0;
 
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        total += try GetIdentifierIfValid(line);
+        if (is_part_b) {
+            std.debug.print("Power {}\n", .{GetGamePower(line)});
+            total += GetGamePower(line);
+        } else {
+            total += try GetIdentifierIfValid(line);
+        }
     }
 
     std.debug.print("Le total est {}.\n", .{total});
