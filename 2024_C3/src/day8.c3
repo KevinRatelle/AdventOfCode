@@ -31,7 +31,27 @@ fn void compute_antinodes_one_pair(String[] antinodes_grid, uint i, uint j, uint
     }
 }
 
-fn void compute_antinodes_one_char(String[] grid, String[] antinodes_grid, char c, uint i, uint j)
+fn void compute_antinodes_one_pair_harmonic(String[] antinodes_grid, int i, int j, int i2, int j2)
+{
+    int offset_x = (int) j - (int) j2;
+    int offset_y = (int) i - (int) i2;
+
+    do 
+    {
+        antinodes_grid[i][j] = '#';
+        i += offset_y;
+        j += offset_x;
+    } while (i >= 0 && i < antinodes_grid.len && j >= 0 && j < antinodes_grid[0].len);
+
+    do
+    {
+        antinodes_grid[i2][j2] = '#';
+        i2 -= offset_y;
+        j2 -= offset_x;
+    } while (i2 >= 0 && i2 < antinodes_grid.len && j2 >= 0 && j2 < antinodes_grid[0].len);
+}
+
+fn void compute_antinodes_one_char(String[] grid, String[] antinodes_grid, char c, uint i, uint j, bool is_part_b)
 {
     for (int row = 0; row < grid.len; row++)
     {
@@ -45,13 +65,20 @@ fn void compute_antinodes_one_char(String[] grid, String[] antinodes_grid, char 
             char other = grid[row][col];
             if (other == c)
             {
-                compute_antinodes_one_pair(antinodes_grid, i, j, row, col);
+                if (is_part_b)
+                {
+                    compute_antinodes_one_pair_harmonic(antinodes_grid, i, j, row, col);
+                }
+                else
+                {
+                    compute_antinodes_one_pair(antinodes_grid, i, j, row, col);
+                }
             }
         }
     }
 }
 
-fn void compute_antinodes(String[] grid, String[] antinodes_grid)
+fn void compute_antinodes(String[] grid, String[] antinodes_grid, bool is_part_b)
 {
     for (int row = 0; row < grid.len; row++)
     {
@@ -61,7 +88,7 @@ fn void compute_antinodes(String[] grid, String[] antinodes_grid)
 
             if (is_alpha_numeric(c))
             {
-                compute_antinodes_one_char(grid, antinodes_grid, c, row, col);
+                compute_antinodes_one_char(grid, antinodes_grid, c, row, col, is_part_b);
             }
         }
     }
@@ -112,7 +139,7 @@ fn void process(String data, bool is_part_b)
         antinodes_grid.free();
     }
 
-    compute_antinodes(grid, antinodes_grid.to_tarray());
+    compute_antinodes(grid, antinodes_grid.to_tarray(), is_part_b);
     print(antinodes_grid.to_tarray());
 
     uint total = count_antinodes(antinodes_grid.to_tarray());
