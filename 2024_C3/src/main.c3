@@ -1,6 +1,9 @@
 module m_2024_c3;
+
 import std::io;
 import std::collections::list;
+import std::time;
+
 import day9;
 
 fn int main(String[] args)
@@ -15,8 +18,12 @@ fn int main(String[] args)
 	}
 	defer free(data);
 
-	bool is_part_b = false;
+	Time start = time::now();
+	bool is_part_b = true;
 	day9::process(data, is_part_b);
+
+	Duration elapsed = time::now().diff_us(start);
+	io::printfn("Elapsed: %d ms", elapsed.to_ms());
 
 	return 0;
 }
