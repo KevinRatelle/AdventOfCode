@@ -20,7 +20,7 @@ fn bool contains(List(<Position>)* positions, Position pos)
     return false;
 }
 
-fn void check_possibilities(String[] grid, Position current, List(<Position>)* tails)
+fn void check_possibilities(String[] grid, Position current, List(<Position>)* tails, bool is_part_b)
 {
     int current_value = grid[current.row][current.col];
     for(int i = -1; i<=1; i++)
@@ -52,25 +52,25 @@ fn void check_possibilities(String[] grid, Position current, List(<Position>)* t
 
             if (grid[neighbor.row][neighbor.col] == (current_value+1))
             {
-                if ((current_value+1) == '9' && !contains(tails, neighbor))
+                if ((current_value+1) == '9' && (!contains(tails, neighbor) || is_part_b))
                 {
                     tails.push(neighbor);
                 }
                 else
                 {
-                    check_possibilities(grid, neighbor, tails);
+                    check_possibilities(grid, neighbor, tails, is_part_b);
                 }
             }
         }
     }
 }
 
-fn uint compute_score(String[] grid, Position head)
+fn uint compute_score(String[] grid, Position head, bool is_part_b)
 {
     List(<Position>) tails;
     defer tails.free();
 
-    check_possibilities(grid, head, &tails);
+    check_possibilities(grid, head, &tails, is_part_b);
 
     return (uint) tails.len();
 }
@@ -98,7 +98,7 @@ fn void process(String data, bool is_part_b)
     uint total_score = 0;
     foreach(Position head : heads)
     {
-        uint score = compute_score(grid, head);
+        uint score = compute_score(grid, head, is_part_b);
         total_score += score;
     }
 
