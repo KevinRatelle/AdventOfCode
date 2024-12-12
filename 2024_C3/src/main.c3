@@ -4,13 +4,13 @@ import std::io;
 import std::collections::list;
 import std::time;
 
-import day11;
+import day12;
 
 fn int main(String[] args)
 {
 	io::printn("Hello, World!");
 
-	String file_name = "resources/day11.txt";
+	String file_name = "resources/day12.txt";
 	String! data = (String) io::file::load_new(file_name);
 	if (catch error = data)
 	{
@@ -20,7 +20,7 @@ fn int main(String[] args)
 
 	Time start = time::now();
 	bool is_part_b = true;
-	day11::process(data, is_part_b);
+	day12::process(data, is_part_b);
 
 	Duration elapsed = time::now().diff_us(start);
 	io::printfn("Elapsed: %d ms", elapsed.to_ms());
