@@ -4,8 +4,8 @@ import std::sort;
 
 struct Position
 {
-    uint x;
-    uint y;
+    ulong x;
+    ulong y;
 }
 
 struct Machine
@@ -17,13 +17,13 @@ struct Machine
 
 struct PosCost
 {
-    uint x;
-    uint y;
-    uint g;
-    uint h;
-    uint f;
-    uint total_a;
-    uint total_b;
+    ulong x;
+    ulong y;
+    ulong g;
+    ulong h;
+    ulong f;
+    ulong total_a;
+    ulong total_b;
     PosCost* parent;
 }
 
@@ -58,8 +58,8 @@ fn Position read_position(String line)
     String x_str = x_temp[1];
     String y_str = y_temp[1];
 
-    int! x = x_str.to_int();
-    int! y = y_str.to_int();
+    ulong! x = x_str.to_ulong();
+    ulong! y = y_str.to_ulong();
 
     Position pos;
     if (catch err = x)
@@ -78,14 +78,14 @@ fn Position read_position(String line)
     return pos;
 }
 
-fn uint heuristic(PosCost start, PosCost goal)
+fn ulong heuristic(PosCost start, PosCost goal)
 {
     return goal.x - start.x + goal.y - start.y;
 }
 
 fn int get_smallest(List(<PosCost>)* list)
 {
-    uint smallest = list.get(0).f;
+    ulong smallest = list.get(0).f;
     int index = 0;
     for(int i = 0; i < list.len(); i++)
     {
@@ -104,9 +104,9 @@ fn bool is_button_a(Machine machine)
     return false;
 }
 
-fn uint path_cost(PosCost end)
+fn ulong path_cost(PosCost end)
 {
-    uint cost = 0;
+    ulong cost = 0;
     PosCost* parent = end.parent;
     PosCost current = end;
     while (parent.x != 0 || parent.y != 0)
@@ -146,7 +146,7 @@ fn int index_of(List(<PosCost>)* list, PosCost item)
     return -1;
 }
 
-fn uint cheapest_path(Machine machine)
+fn ulong cheapest_path(Machine machine)
 {
     PosCost goal;
     goal.x = machine.prize.x;
@@ -197,7 +197,7 @@ fn uint cheapest_path(Machine machine)
 
         if (!contains(&closed_list, neighbor_a))
         {
-            uint tentative_g = current.g + 3;
+            ulong tentative_g = current.g + 3;
             
             int idx = index_of(&open_list, neighbor_a);
             if (idx == -1)
@@ -229,7 +229,7 @@ fn uint cheapest_path(Machine machine)
 
         if (!contains(&closed_list, neighbor_b))
         {
-            uint tentative_g = current.g + 1;
+            ulong tentative_g = current.g + 1;
             
             int idx = index_of(&open_list, neighbor_b);
             if (idx == -1)
@@ -280,7 +280,7 @@ fn void process(String data, bool is_part_b)
     for(int i = 0; i < machines.len(); i++)
     {
         Machine machine = machines[i];
-        uint path_cost = cheapest_path(machine);
+        ulong path_cost = cheapest_path(machine);
         io::printfn("Path %d (of %d) costs %d", i, machines.len(), path_cost);
 
         total += path_cost;
