@@ -1,5 +1,6 @@
 import std::io;
 import std::collections::list;
+import std::sort;
 
 struct Position
 {
