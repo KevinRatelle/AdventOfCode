@@ -15,23 +15,6 @@ struct Machine
     Position prize;
 }
 
-struct PosCost
-{
-    ulong x;
-    ulong y;
-    ulong g;
-    ulong h;
-    ulong f;
-    ulong total_a;
-    ulong total_b;
-    PosCost* parent;
-}
-
-fn bool PosCost.equals(PosCost* this, PosCost pos)
-{
-    return (this.x == pos.x) && (this.y == pos.y);
-}
-
 fn Position read_position(String line)
 {
     String[] temp = line.split(": ");
@@ -78,185 +61,51 @@ fn Position read_position(String line)
     return pos;
 }
 
-fn ulong heuristic(PosCost start, PosCost goal)
-{
-    return goal.x - start.x + goal.y - start.y;
-}
-
-fn int get_smallest(List(<PosCost>)* list)
-{
-    ulong smallest = list.get(0).f;
-    int index = 0;
-    for(int i = 0; i < list.len(); i++)
-    {
-        if (list.get(i).f < smallest)
-        {
-            smallest = list.get(i).f;
-            index = i;
-        }
-    }
-
-    return index;
-}
-
-fn bool is_button_a(Machine machine)
-{
-    return false;
-}
-
-fn ulong path_cost(PosCost end)
-{
-    ulong cost = 0;
-    PosCost* parent = end.parent;
-    PosCost current = end;
-    while (parent.x != 0 || parent.y != 0)
-    {
-        cost += 1;
-
-        current = *parent;
-        parent = parent.parent;
-    }
-
-    return cost;
-}
-
-fn bool contains(List(<PosCost>)* list, PosCost item)
-{
-    foreach(PosCost pos : list)
-    {
-        if (pos.x == item.x && pos.y == item.y)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-fn int index_of(List(<PosCost>)* list, PosCost item)
-{
-    for(int i = 0; i < list.len(); i++)
-    {
-        if (list.get(i).x == item.x && list.get(i).y == item.y)
-        {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
 fn ulong cheapest_path(Machine machine)
 {
-    PosCost goal;
-    goal.x = machine.prize.x;
-    goal.y = machine.prize.y;
+    // Linear algebra, 2 equations 2 variables, only 1 solution
+    // M * ax + N * bx = cx
+    // M * ay + N * by = cy
 
-    PosCost start;
-    start.x = 0;
-    start.y = 0;
-    start.g = 0;
-    start.total_a = 0;
-    start.total_b = 0;
-    start.h = heuristic(start, goal);
-    start.f = start.g + start.h;
+    // Equation for M
+    // M = (cy - N * by) / ay
 
-    List(<PosCost>) open_list;
-    defer open_list.free();
+    // Find equation for N
+    // (cy - N * by) / ay * ax + N * bx = cx
+    // (cy - N * by) ax + N * bx * ay = cx * ay
+    // cy * ax + N (bx * ay - by * ax) = cx * ay
+    // N (bx * ay - by * ax) = cx * ay - cy * ax
+    // N = (cx * ay - cy * ax) / (bx * ay - by * ax)
 
-    List(<PosCost>) closed_list;
-    defer closed_list.free();
+    long cx = machine.prize.x;
+    long cy = machine.prize.y;
 
-    open_list.push(start);
+    long ay = machine.a.y;
+    long ax = machine.a.x;
 
-    while(open_list.len() > 0)
+    long by = machine.b.y;
+    long bx = machine.b.x;
+
+    long button_b_numerator = cx * ay - cy * ax;
+    long button_b_denom = bx * ay - by * ax;
+
+    if (button_b_numerator % button_b_denom != 0)
     {
-        int smallest_index = get_smallest(&open_list);
-        PosCost current = open_list[smallest_index];
-
-        //io::printn(current);
-
-        if (current.equals(goal))
-        {
-            return current.g;
-        }
-
-        closed_list.push(current);
-
-        usz! index = open_list.index_of(current);
-        if (catch err = index)
-        {
-            continue;
-        }
-
-        open_list.remove_at(index);
-
-        PosCost neighbor_a = current;
-        neighbor_a.x += machine.a.x;
-        neighbor_a.y += machine.a.y;
-
-        if (!contains(&closed_list, neighbor_a))
-        {
-            ulong tentative_g = current.g + 3;
-            
-            int idx = index_of(&open_list, neighbor_a);
-            if (idx == -1)
-            {
-                neighbor_a.parent = &current;
-                neighbor_a.g = tentative_g;
-                neighbor_a.h = heuristic(neighbor_a, goal);
-                neighbor_a.f = neighbor_a.g + neighbor_a.h;
-                neighbor_a.total_a++;
-
-                if (neighbor_a.total_a <= 100)
-                {
-                    open_list.push(neighbor_a);
-                }
-            }
-            else if (tentative_g < neighbor_a.g)
-            {
-                open_list[idx].parent = &current;
-                open_list[idx].g = tentative_g;
-                open_list[idx].h = heuristic(open_list[idx], goal);
-                open_list[idx].f = open_list[idx].g + open_list[idx].h;
-                open_list[idx].total_a++;
-            }
-        }
-
-        PosCost neighbor_b = current;
-        neighbor_b.x += machine.b.x;
-        neighbor_b.y += machine.b.y;
-
-        if (!contains(&closed_list, neighbor_b))
-        {
-            ulong tentative_g = current.g + 1;
-            
-            int idx = index_of(&open_list, neighbor_b);
-            if (idx == -1)
-            {
-                neighbor_b.parent = &current;
-                neighbor_b.g = tentative_g;
-                neighbor_b.h = heuristic(neighbor_b, goal);
-                neighbor_b.f = neighbor_b.g + neighbor_b.h;
-                neighbor_b.total_b++;
-
-                if (neighbor_b.total_b <= 100)
-                {
-                    open_list.push(neighbor_b);
-                }
-            }
-            else if (tentative_g < neighbor_b.g)
-            {
-                open_list[idx].parent = &current;
-                open_list[idx].g = tentative_g;
-                open_list[idx].h = heuristic(open_list[idx], goal);
-                open_list[idx].f = open_list[idx].g + open_list[idx].h;
-                open_list[idx].total_b++;
-            }
-        }
+        // no solution for B button
+        return 0;
     }
 
-    return 0;
+    ulong button_b_press_count = button_b_numerator / button_b_denom;
+
+    ulong button_a_numerator = machine.prize.y - button_b_press_count * by;
+    if (button_a_numerator % ay != 0)
+    {
+        // no solution for A button
+        return 0;
+    }
+
+    ulong button_a_press_count = button_a_numerator / ay;
+    return button_b_press_count + button_a_press_count*3;
 }
 
 fn void process(String data, bool is_part_b)
@@ -272,6 +121,12 @@ fn void process(String data, bool is_part_b)
         machine.a = read_position(lines[i]);
         machine.b = read_position(lines[i+1]);
         machine.prize = read_position(lines[i+2]);
+
+        if (is_part_b)
+        {
+            machine.prize.x += 10000000000000;
+            machine.prize.y += 10000000000000;
+        }
 
         machines.push(machine);
     }
