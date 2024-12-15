@@ -1,4 +1,5 @@
 import std::io;
+import std::collections::list;
 
 struct Vector2
 {
@@ -114,28 +115,135 @@ fn int compute_quadrant(Robot robot, Vector2 grid)
     return quadrant;
 }
 
+
+fn void set_grid(List(<String>)* image, List(<Robot>)* robots)
+{
+    for(int i = 0; i < image.len(); i++)
+    {
+        for(int j = 0; j < image.get(i).len; j++)
+        {
+            ZString str = (ZString) image.get(i);
+            str[j] = '.';
+        }
+    }
+
+    for (int i = 0; i<robots.len(); i++)
+    {
+        Robot robot = robots.get(i);
+        image.get(robot.pos.y)[robot.pos.x] = 'X';
+    }
+}
+
+fn void print_grid(List(<String>)* image)
+{
+    for(int i = 0; i < image.len(); i++)
+    {
+        String str = image.get(i);
+        io::printfn(str);
+    }
+}
+
+fn uint tree_heuristic(List(<Robot>)* robots)
+{
+    uint heuristic = 0;
+    for(int i = 0; i < robots.len(); i++)
+    {
+        Robot a = robots.get(i);
+        for (int j = i+1; j < robots.len(); j++)
+        {
+            Robot b = robots.get(j);
+            if ($$abs((int) a.pos.x - (int) b.pos.x) == 1)
+            {
+                heuristic++;
+            }
+
+            if ($$abs((int) a.pos.y - (int) b.pos.y) == 1)
+            {
+                heuristic++;
+            }
+        }
+    }
+
+    return heuristic;
+}
+
 fn void process(String data, bool is_part_b)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
 
-    ulong[4] quadrants = {0,0,0,0};
     Vector2 grid;
     grid.x = 101;
     grid.y = 103;
-    foreach(String line : lines)
-    {
-        Robot robot = read_robot(line);
-        move_robot(&robot, 100, grid);
-        io::printfn("Robot : pos %d %d vel %d %d", robot.pos.x, robot.pos.y, robot.vel.x, robot.vel.y);
 
-        int quadrant_index = compute_quadrant(robot, grid);
-        if (quadrant_index != -1)
+    if (!is_part_b)
+    {
+        ulong[4] quadrants = {0,0,0,0};
+
+        foreach(String line : lines)
         {
-            quadrants[quadrant_index]++;
+            Robot robot = read_robot(line);
+            move_robot(&robot, 100, grid);
+            io::printfn("Robot : pos %d %d vel %d %d", robot.pos.x, robot.pos.y, robot.vel.x, robot.vel.y);
+
+            int quadrant_index = compute_quadrant(robot, grid);
+            if (quadrant_index != -1)
+            {
+                quadrants[quadrant_index]++;
+            }
+        }
+
+        ulong total = quadrants[0] * quadrants[1] * quadrants[2] * quadrants[3];
+        io::printfn("Total is %d", total);
+    }
+    else
+    {
+
+        List(<String>) image;
+        defer image.free();
+
+        for(int i = 0; i < grid.y; i++)
+        {
+            String str = "";
+            image.push(str);
+
+            for (int j = 0; j < grid.x; j++)
+            {
+                image[i] = image[i].concat(".");
+            }
+        }
+
+        List(<Robot>) robots;
+        foreach(String line : lines)
+        {
+            Robot robot = read_robot(line);
+            robots.push(robot);
+        }
+
+        uint frame = 0;
+        uint tree_probability = 0;
+        while (true)
+        {
+            frame++;
+
+            if (frame % 1000 == 0)
+            {
+                io::printfn("Second = %d", frame);
+            }
+
+            foreach(Robot* &robot : robots)
+            {
+                move_robot(robot, 1, grid);
+            }
+
+            uint current_tree_probability = tree_heuristic(&robots);
+            if (current_tree_probability > tree_probability)
+            {
+                io::printfn("Second = %d", frame);
+                set_grid(&image, &robots);
+                print_grid(&image);
+                tree_probability = current_tree_probability;
+            }
         }
     }
-
-    ulong total = quadrants[0] * quadrants[1] * quadrants[2] * quadrants[3];
-    io::printfn("Total is %d", total);
 }
