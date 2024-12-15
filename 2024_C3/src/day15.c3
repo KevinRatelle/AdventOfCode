@@ -1,5 +1,7 @@
 import std::io;
 import std::collections::list;
+import std::sort;
+
 
 struct Vector2
 {
@@ -72,35 +74,70 @@ fn void execute_command(List(<String>)* map, char command)
     Vector2 pos = get_cursor(map);
     Vector2 dir = get_direction(command);
 
-    Vector2 cursor = pos;
-    while(true)
-    {
-        cursor.x += dir.x;
-        cursor.y += dir.y;
+    List(<Vector2>) list_to_check;
+    List(<Vector2>) list_to_move;
+    defer list_to_check.free();
+    defer list_to_move.free();
 
-        char item = map.get(cursor.y)[cursor.x];
+    bool is_valid = true;
+
+    list_to_check.push(pos);
+    while(list_to_check.len() > 0)
+    {
+        Vector2! current = list_to_check.pop();
+        if (catch err = current)
+        {
+            is_valid = false;
+            break;
+        }
+
+        Vector2 next = current;
+        next.x += dir.x;
+        next.y += dir.y;
+
+        char item = map.get(next.y)[next.x];
         if (item == '#')
         {
+            is_valid = false;
             break;
         }
 
-        if (item == '.')
+        list_to_move.push(current);
+
+        if (item != '.')
         {
-            dir.x = -dir.x;
-            dir.y = -dir.y;
-
-            while(cursor.x != pos.x || cursor.y != pos.y)
-            {
-                Vector2 next = cursor;
-                next.x += dir.x;
-                next.y += dir.y;
-                map.get(cursor.y)[cursor.x] = map.get(next.y)[next.x];
-                cursor = next;
-            }
-
-            map.get(pos.y)[pos.x] = '.';
-            break;
+            list_to_check.push(next);
         }
+    }
+
+    if (is_valid)
+    {
+        if (dir.y > 0)
+        {
+            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.y < b.y) ? 1 : -1; });
+        }
+        if (dir.y < 0)
+        {
+            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.y > b.y) ? 1 : -1; });
+        }
+        if (dir.x > 0)
+        {
+            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.x < b.x) ? 1 : -1; });
+        }
+        if (dir.x < 0)
+        {
+            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.x > b.x) ? 1 : -1; });
+        }
+
+        foreach(Vector2 current : list_to_move)
+        {
+            Vector2 next = current;
+            next.x += dir.x;
+            next.y += dir.y;
+            map.get(next.y)[next.x] = map.get(current.y)[current.x]; 
+        }
+
+        map.get(pos.y)[pos.x] = '.';
     }
 }
 
@@ -140,7 +177,38 @@ fn void process(String data, bool is_part_b)
 
         if (reading_map_mode)
         {
-            map.push(line);
+            if (!is_part_b)
+            {
+                map.push(line);
+            }
+            else
+            {
+                String double_line = "";
+                foreach(char c : line)
+                {
+                    switch (c)
+                    {
+                        case '.':
+                        {
+                            double_line = double_line.concat("..");
+                        }
+                        case '@':
+                        {
+                            double_line = double_line.concat("@.");
+                        }
+                        case '#':
+                        {
+                            double_line = double_line.concat("##");
+                        }
+                        case 'O':
+                        {
+                            double_line = double_line.concat("[]");
+                        }
+                    }        
+                }
+
+                map.push(double_line);
+            }
         }
         else
         {
