@@ -9,6 +9,11 @@ struct Vector2
     int y;
 }
 
+fn bool Vector2.equals(Vector2* this, Vector2 other)
+{
+    return this.x == other.x && this.y == other.y;
+}
+
 fn void print_grid(List(<String>)* image)
 {
     for(int i = 0; i < image.len(); i++)
@@ -108,36 +113,105 @@ fn void execute_command(List(<String>)* map, char command)
         {
             list_to_check.push(next);
         }
+
+        if (dir.y != 0)
+        {
+            if (item == '[')
+            {
+                next.x += 1;
+                list_to_check.push(next);
+            }
+
+            if (item == ']')
+            {
+                next.x -= 1;
+                list_to_check.push(next);
+            }
+        }
     }
 
     if (is_valid)
     {
-        if (dir.y > 0)
+        while(list_to_move.len() > 0)
         {
-            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.y < b.y) ? 1 : -1; });
-        }
-        if (dir.y < 0)
-        {
-            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.y > b.y) ? 1 : -1; });
-        }
-        if (dir.x > 0)
-        {
-            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.x < b.x) ? 1 : -1; });
-        }
-        if (dir.x < 0)
-        {
-            quicksort(list_to_move,  fn int (Vector2* a, Vector2* b) { return (a.x > b.x) ? 1 : -1; });
+            Vector2! current = list_to_move.pop();
+            if (catch err = current)
+            {
+                break;
+            }
+    
+            List(<Vector2>) sublist;
+            sublist.push(current);
+            defer sublist.free();
+            
+            List(<int>) to_remove;
+            for(int i = ((int)list_to_move.len()-1); i>=0; i--)
+            {
+                Vector2 item = list_to_move[i];
+                if (dir.y == 0)
+                {
+                    if (item.y == current.y)
+                    {
+                        sublist.push(item);
+                        to_remove.push(i);
+                    }
+                }
+                else
+                {
+                    if (item.x == current.x)
+                    {
+                        sublist.push(item);
+                        to_remove.push(i);
+                    }
+                }
+            }
+
+            for (int i = 0; i < to_remove.len(); i++)
+            {
+                list_to_move.remove_at(to_remove[i]);
+            }
+
+            if (dir.y > 0)
+            {
+                quicksort(sublist,  fn int (Vector2* a, Vector2* b) { return (a.y <= b.y) ? 1 : -1; });
+            }
+            if (dir.y < 0)
+            {
+                quicksort(sublist,  fn int (Vector2* a, Vector2* b) { return (a.y >= b.y) ? 1 : -1; });
+            }
+            if (dir.x > 0)
+            {
+                quicksort(sublist,  fn int (Vector2* a, Vector2* b) { return (a.x <= b.x) ? 1 : -1; });
+            }
+            if (dir.x < 0)
+            {
+                quicksort(sublist,  fn int (Vector2* a, Vector2* b) { return (a.x >= b.x) ? 1 : -1; });
+            }
+
+            for(int i = 0; i < (sublist.len()-1);)
+            {
+                Vector2 a = sublist[i];
+                Vector2 b = sublist[(ulong) i+1];
+                if (a.x == b.x && a.y == b.y)
+                {
+                    sublist.remove_at(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+
+            foreach(Vector2 cur : sublist)
+            {
+                Vector2 next = cur;
+                next.x += dir.x;
+                next.y += dir.y;
+                map.get(next.y)[next.x] = map.get(cur.y)[cur.x];
+                map.get(cur.y)[cur.x] = '.';
+            }
         }
 
-        foreach(Vector2 current : list_to_move)
-        {
-            Vector2 next = current;
-            next.x += dir.x;
-            next.y += dir.y;
-            map.get(next.y)[next.x] = map.get(current.y)[current.x]; 
-        }
-
-        map.get(pos.y)[pos.x] = '.';
     }
 }
 
@@ -149,7 +223,7 @@ fn ulong compute_gps(List(<String>)* map)
     {
         foreach(ulong j, char c : str)
         {
-            if (c == 'O')
+            if (c == 'O' || c == '[')
             {
                 gps += 100 * i + j;
             }
@@ -220,6 +294,7 @@ fn void process(String data, bool is_part_b)
         }
     }
 
+    print_grid(&map);
     ulong total = compute_gps(&map);
     io::printfn("Total is %d", total);
 }
