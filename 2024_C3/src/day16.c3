@@ -25,6 +25,8 @@ struct DeerCost
 {
     Deer deer;
     Cost cost;
+    char op;
+    uint from;
 }
 
 fn bool Vector2.equals(Vector2* this, Vector2 other)
@@ -54,7 +56,7 @@ fn void Cost.set_h(Cost* this, uint h)
 
 fn bool DeerCost.equals(DeerCost* this, DeerCost other)
 {
-    return this.deer.equals(other.deer);
+    return this.deer.equals(other.deer) && this.op == other.op;
 }
 
 fn uint heuristic(DeerCost start, DeerCost goal)
@@ -83,7 +85,7 @@ fn int index_of(List(<DeerCost>)* list, DeerCost item)
 {
     foreach(int i, DeerCost deer_cost : list)
     {
-        if (deer_cost.deer.equals(item.deer))
+        if (deer_cost.equals(item))
         {
             return i;
         }
@@ -137,7 +139,7 @@ fn void update_open_list(List(<DeerCost>)* open_list, DeerCost item, DeerCost go
     }
 }
 
-fn uint cheapest_path(String[] grid)
+fn uint cheapest_path(String[] grid, bool is_part_b)
 {
     DeerCost goal;
     goal.deer.pos = get_pos(grid, 'E');
@@ -177,16 +179,19 @@ fn uint cheapest_path(String[] grid)
             io::printfn("Current best : %d", best);
         }
 
+        closed_list.push(current);
         if (goal.deer.pos.equals(current.deer.pos))
         {
-            return current.cost.g;
+            best = current.cost.g;
+            break;
         }
-        closed_list.push(current);
 
         {
             DeerCost neighbor = current;
+            neighbor.from =  (uint) closed_list.len()-1;
             neighbor.deer.pos.x += neighbor.deer.dir.x;
             neighbor.deer.pos.y += neighbor.deer.dir.y;
+            neighbor.op = 1;
             if (grid[neighbor.deer.pos.y][neighbor.deer.pos.x] != '#' && !contains(&closed_list, neighbor))
             {
                 uint tentative_g = current.cost.g + 1;
@@ -195,6 +200,9 @@ fn uint cheapest_path(String[] grid)
         }
         {
             DeerCost neighbor = current;
+            neighbor.op = 2;
+            neighbor.from = (uint) closed_list.len()-1;
+
             if (neighbor.deer.dir.x != 0)
             {
                 neighbor.deer.dir.x = 0;
@@ -214,6 +222,9 @@ fn uint cheapest_path(String[] grid)
         }
         {
             DeerCost neighbor = current;
+            neighbor.op = 3;
+            neighbor.from = (uint) closed_list.len()-1;
+
             if (neighbor.deer.dir.x != 0)
             {
                 neighbor.deer.dir.x = 0;
@@ -232,7 +243,50 @@ fn uint cheapest_path(String[] grid)
             }
         }
     }
-    return 0;
+
+    if (is_part_b)
+    {
+        List(<uint>) chains;
+        defer chains.free();
+        chains.push((uint) closed_list.len()-1);
+
+        List(<Vector2>) all_places;
+        defer all_places.free();
+
+        while(chains.len() > 0)
+        {
+            uint! idx = chains.pop();
+            if(catch err = idx)
+            {
+                break;
+            }
+
+            DeerCost current = closed_list[idx];
+            while(!current.deer.pos.equals(start.deer.pos))
+            {
+                uint from_index = current.from;
+                current = closed_list[from_index];
+
+                if (!all_places.contains(current.deer.pos))
+                {
+                    all_places.push(current.deer.pos);
+                }
+
+                foreach(int i, DeerCost deer_cost : closed_list)
+                {
+                    if (deer_cost.deer.equals(current.deer) && i != from_index && deer_cost.cost.g == current.cost.g)
+                    {
+                        chains.push(i);
+                        io::printn(closed_list[i]);
+                    }
+                }
+            }
+        }
+       
+        return (uint) all_places.len() + 1;
+    }
+
+    return best;
 }
 
 fn void process(String data, bool is_part_b)
@@ -240,6 +294,6 @@ fn void process(String data, bool is_part_b)
     String[] grid = data.split("\r\n");
 	defer free(grid);
 
-    uint cost = cheapest_path(grid);
+    uint cost = cheapest_path(grid, is_part_b);
     io::printfn("Total is %d", cost);
 }
