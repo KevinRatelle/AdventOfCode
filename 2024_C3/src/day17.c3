@@ -283,15 +283,10 @@ fn void process(String data, bool is_part_b)
     Computer computer = load_state(lines);
     defer computer.free();
 
-    io::printn(computer);
-
     while(!computer.m_halted)
     {
         computer.tick();
     }
 
-        io::printn(computer);
-
-
-    io::printfn("Total is %d", 0);
+    io::printfn("Output is %s", computer.m_output);
 }
