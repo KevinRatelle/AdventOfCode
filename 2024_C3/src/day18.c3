@@ -98,7 +98,7 @@ fn void update_open_list(List(<Cost>)* open_list, Cost item, Cost goal, uint ten
     }
 }
 
-fn uint cheapest_path(List(<String>)* grid, bool is_part_b)
+fn int cheapest_path(List(<String>)* grid)
 {
     Cost goal;
     goal.pos.y = (int) grid.len() - 1;
@@ -119,7 +119,7 @@ fn uint cheapest_path(List(<String>)* grid, bool is_part_b)
 
     open_list.push(start);
 
-    uint best = 1000;
+    int best = 1000;
 
     while(open_list.len() > 0)
     {
@@ -135,7 +135,6 @@ fn uint cheapest_path(List(<String>)* grid, bool is_part_b)
         if (heuristic(current, goal) < best)
         {
             best = heuristic(current, goal);
-            io::printfn("Current best : %d", best);
         }
 
         closed_list.push(current);
@@ -185,6 +184,11 @@ fn uint cheapest_path(List(<String>)* grid, bool is_part_b)
                 update_open_list(&open_list, neighbor, goal, tentative_g);
             }
         }
+
+        if (open_list.len() == 0)
+        {
+            best = -1;
+        }
     }
 
     return best;
@@ -230,17 +234,23 @@ fn void process(String data, bool is_part_b)
 
         grid.get(y)[x] = '#';
         count++;
-        if (count == byte_to_read)
+        if (count == byte_to_read && !is_part_b)
         {
+            int cost = cheapest_path(&grid);
+            io::printfn("Total is %d", cost);
+
             break;
         }
-    }
 
-    foreach(String row : grid)
-    {
-        io::printn(row);
+        if (is_part_b && count > byte_to_read)
+        {
+            io::printfn("Testing byte %d", count);
+            int cost = cheapest_path(&grid);
+            if (cost == -1)
+            {
+                io::printfn("First byte too many is (%d,%d)", x, y);
+                break;
+            }
+        }
     }
-
-    uint cost = cheapest_path(&grid, is_part_b);
-    io::printfn("Total is %d", cost);
 }
