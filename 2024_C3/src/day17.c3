@@ -4,29 +4,51 @@ import std::math;
 
 struct State
 {
-    uint a;
-    uint b;
-    uint c;
-}
-
-struct Instruction
-{
-    ushort opcode;
-    ushort operand;
+    ulong a;
+    ulong b;
+    ulong c;
 }
 
 struct Computer
 {
     State m_state;
-    List(<Instruction>) m_program;
+    List(<ushort>) m_program;
 
     int m_pointer;
-    List(<uint>) m_output;
+    List(<ulong>) m_output;
     bool m_halted;
     bool m_skip_increase;
 }
 
-fn uint Computer.combo(Computer* this, ushort operand)
+fn void Computer.reset(Computer* this)
+{
+    this.m_pointer = 0;
+    this.m_halted = false;
+    this.m_skip_increase = false;
+    this.m_output.free();
+    this.m_state.b = 0;
+    this.m_state.c = 0;
+}
+
+fn bool Computer.is_identical(Computer* this)
+{
+    if (this.m_output.len() != this.m_program.len())
+    {
+        return false;
+    }
+
+    for(int i = 0; i < this.m_output.len(); i++)
+    {
+        if (this.m_output[i] != this.m_program[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+fn ulong Computer.combo(Computer* this, ushort operand)
 {
     if (operand < 4)
     {
@@ -62,14 +84,14 @@ fn void Computer.free(Computer* this)
     this.m_output.free();
 }
 
-fn uint power(uint val, uint pow)
+fn ulong power(ulong val, ulong pow)
 {
     if (pow == 0)
     {
         return 1;
     }
 
-    uint result = val;
+    ulong result = val;
     while(--pow)
     {
         result *= val;
@@ -80,10 +102,10 @@ fn uint power(uint val, uint pow)
 
 fn void Computer.adv(Computer* this, ushort operand)
 {
-    uint num = this.m_state.a;
-    uint pow = this.combo(operand);
+    ulong num = this.m_state.a;
+    ulong pow = this.combo(operand);
 
-    uint den = power(2, pow);
+    ulong den = power(2, pow);
     this.m_state.a = num / den;
 }
 
@@ -115,49 +137,50 @@ fn void Computer.bxc(Computer* this)
 
 fn void Computer.out(Computer* this, ushort operand)
 {
-    uint val = this.combo(operand);
-    this.m_output.push(val % 8);
+    ulong val = this.combo(operand);
+    this.m_output.push((ulong) val % 8);
 }
 
 fn void Computer.bdv(Computer* this, ushort operand)
 {
-    uint num = this.m_state.a;
-    uint pow = this.combo(operand);
+    ulong num = this.m_state.a;
+    ulong pow = this.combo(operand);
 
-    uint den = power(2, pow);
+    ulong den = power(2, pow);
     this.m_state.b = num / den;
 }
 
 fn void Computer.cdv(Computer* this, ushort operand)
 {
-    uint num = this.m_state.a;
-    uint pow = this.combo(operand);
+    ulong num = this.m_state.a;
+    ulong pow = this.combo(operand);
 
-    uint den = power(2, pow);
+    ulong den = power(2, pow);
     this.m_state.c = num / den;
 }
 
 fn void Computer.tick(Computer* this)
 {
-    Instruction instruction = this.m_program[this.m_pointer];
+    ushort opcode = this.m_program[this.m_pointer];
+    ushort operand = this.m_program[(ulong) this.m_pointer+1];
 
-    switch(instruction.opcode)
+    switch(opcode)
     {
         case 0:
         {
-            this.adv(instruction.operand);
+            this.adv(operand);
         }
         case 1:
         {
-            this.bxl(instruction.operand);
+            this.bxl(operand);
         }
         case 2:
         {
-            this.bst(instruction.operand);
+            this.bst(operand);
         }
         case 3:
         {
-            this.jnz(instruction.operand);
+            this.jnz(operand);
         }
         case 4:
         {
@@ -165,21 +188,21 @@ fn void Computer.tick(Computer* this)
         }
         case 5:
         {
-            this.out(instruction.operand);
+            this.out(operand);
         }
         case 6:
         {
-            this.bdv(instruction.operand);
+            this.bdv(operand);
         }
         case 7:
         {
-            this.cdv(instruction.operand);
+            this.cdv(operand);
         }
     }
 
     if (!this.m_skip_increase)
     {
-        this.m_pointer++; // technically steps twice in memory
+        this.m_pointer+=2; // technically steps twice in memory
     }
 
     this.m_skip_increase = false;
@@ -215,7 +238,7 @@ fn Computer load_state(String[] lines)
             String register_value = register_info[1];
 
             char register_char = register_name[register_name.len - 1];
-            uint! val = register_value.to_uint();
+            ulong! val = register_value.to_ulong();
             if (catch err = val)
             {
                 break;
@@ -245,10 +268,10 @@ fn Computer load_state(String[] lines)
             String[] program_content = program_string[1].split(",");
             defer free(program_content);
 
-            uint item_count = program_content.len;
+            ulong item_count = program_content.len;
             assert(item_count % 2 == 0);
 
-            uint instruction_count = item_count / 2;
+            ulong instruction_count = item_count / 2;
             for (int i = 0; i<instruction_count; i++)
             {
                 int index = i*2;
@@ -264,10 +287,8 @@ fn Computer load_state(String[] lines)
                     break;
                 }
 
-                Instruction instruction;
-                instruction.opcode = opcode;
-                instruction.operand = operand;
-                computer.m_program.push(instruction);
+                computer.m_program.push(opcode);
+                computer.m_program.push(operand);
             }
         }
     }
@@ -283,10 +304,51 @@ fn void process(String data, bool is_part_b)
     Computer computer = load_state(lines);
     defer computer.free();
 
-    while(!computer.m_halted)
+    if (!is_part_b)
     {
-        computer.tick();
-    }
+        while(!computer.m_halted)
+        {
+            computer.tick();
+        }
 
-    io::printfn("Output is %s", computer.m_output);
+        io::printfn("Output is %s", computer.m_output);
+    }
+    else
+    {
+        // after investigation, the output repeats after 8 values, for each digit
+        // for example, last digit do 4,4,5,6,0,1,2,3, but then do 4 8 times, 4 8 times, 5 8 times, etc, so
+        // so we loop until last digit = what we want, then we multiply the index by 8 then go to the next digit
+
+        ulong a = 0;
+        int digit_index = (int) computer.m_program.len() - 1;
+        while(digit_index>=0)
+        {
+            computer.reset();
+            computer.m_state.a = a;
+
+            while(!computer.m_halted)
+            {
+                computer.tick();
+            }
+
+            io::printfn("Output is %s", computer.m_output);
+            if (digit_index == 0 && computer.is_identical())
+            {
+                break;
+            }
+
+            if (digit_index > 0 && computer.m_output[0] == computer.m_program[digit_index])
+            {
+                digit_index--;
+                a *= 8;   
+            }
+            else
+            {
+                a++;
+            }
+        }
+
+        io::printfn("Register a needs to be %d", a);
+    }
+    
 }

@@ -20,7 +20,7 @@ fn int main(String[] args)
 	defer free(data);
 
 	Time start = time::now();
-	bool is_part_b = false;
+	bool is_part_b = true;
 	day17::process(data, is_part_b);
 
 	Duration elapsed = time::now().diff_us(start);
