@@ -45,7 +45,7 @@ fn ulong pattern_count(String pattern, List(<String>)* dictionary, List(<StringW
             if (item.len == pattern.len)
             {
                 count++;
-                break;
+                continue;
             }
 
             String sub = pattern[item.len..pattern.len-1];
