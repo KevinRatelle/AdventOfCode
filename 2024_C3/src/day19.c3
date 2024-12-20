@@ -82,20 +82,23 @@ fn void process(String data, bool is_part_b)
     defer precomputed.free();
 
     ulong possible_count = 0;
-    ulong total_count = 0;
     for(int i = 2; i<lines.len; i++)
     {
         io::printfn("Current step %d", i-1);
         String pattern = lines[i];
 
-
         ulong count = pattern_count(pattern, &dictionary, &precomputed);
-        if (count > 0)
+        if (is_part_b)
         {
-            total_count += count;
-            possible_count++;
+            possible_count += count;
+        }
+        else
+        {
+            possible_count += count > 0 ? 1 : 0;
         }
     }
 
-    io::printfn("Possible count = %d %d", possible_count, total_count);
+    
+
+    io::printfn("Possible count = %d", possible_count);
 }
