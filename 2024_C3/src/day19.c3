@@ -16,7 +16,25 @@ fn List(<String>) read_dictionary(String line)
 
 fn bool is_possible_pattern(String pattern, List(<String>)* dictionary)
 {
-    return true;
+    foreach(String item : dictionary)
+    {
+        if (pattern.starts_with(item))
+        {
+            if (item.len == pattern.len)
+            {
+                return true;
+            }
+
+            String sub = pattern[item.len..pattern.len-1];
+            bool is_possible = is_possible_pattern(sub, dictionary);
+            if (is_possible)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 fn void process(String data, bool is_part_b)
