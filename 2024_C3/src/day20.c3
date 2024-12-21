@@ -13,11 +13,25 @@ struct Cost
     uint g;
     uint h;
     uint f;
+    int from;
 }
 
 fn bool Vector2.equals(Vector2* this, Vector2 other)
 {
     return this.x == other.x && this.y == other.y;
+}
+
+fn Vector2 Vector2.minus(Vector2* this, Vector2 other)
+{
+    Vector2 out;
+    out.x = this.x - other.x;
+    out.y = this.y - other.y;
+    return out;
+}
+
+fn uint Vector2.length(Vector2* this)
+{
+    return $$abs(this.x) + $$abs(this.y);
 }
 
 fn bool Cost.equals(Cost* this, Cost other)
@@ -120,7 +134,28 @@ fn Vector2 get_pos(String[] grid, char to_find)
     return pos;
 }
 
-fn int cheapest_path(String[] grid)
+fn List(<Vector2>) construct_path(List(<Cost>) closed_list)
+{
+    List(<Vector2>) path;
+
+    Cost! item = closed_list.pop();
+    if (catch err = item)
+    {
+        return path;
+    }
+
+    path.push(item.pos);
+
+    while(item.from != -1)
+    {
+        item = closed_list[item.from];
+        path.push(item.pos);
+    }
+
+    return path;
+}
+
+fn List(<Vector2>) cheapest_path(String[] grid)
 {
     Cost goal;
     goal.pos = get_pos(grid, 'E');
@@ -130,6 +165,7 @@ fn int cheapest_path(String[] grid)
     start.g = 0;
     start.h = heuristic(start, goal);
     start.f = start.g + start.h;
+    start.from = -1;
 
     List(<Cost>) closed_list;
     defer closed_list.free();
@@ -138,8 +174,6 @@ fn int cheapest_path(String[] grid)
     defer open_list.free();
 
     open_list.push(start);
-
-    int best = 1000;
 
     while(open_list.len() > 0)
     {
@@ -152,15 +186,9 @@ fn int cheapest_path(String[] grid)
             break;
         }
 
-        if (heuristic(current, goal) < best)
-        {
-            best = heuristic(current, goal);
-        }
-
         closed_list.push(current);
         if (goal.pos.equals(current.pos))
         {
-            best = current.g;
             break;
         }
 
@@ -168,6 +196,7 @@ fn int cheapest_path(String[] grid)
         {
             Cost neighbor = current;
             neighbor.pos.x += 1;
+            neighbor.from = (int) closed_list.len() - 1;
             if (grid[neighbor.pos.y][neighbor.pos.x] != '#' && !contains(&closed_list, neighbor))
             {
                 uint tentative_g = current.g + 1;
@@ -178,6 +207,7 @@ fn int cheapest_path(String[] grid)
         {
             Cost neighbor = current;
             neighbor.pos.x -= 1;
+            neighbor.from = (int) closed_list.len() - 1;
             if (grid[neighbor.pos.y][neighbor.pos.x] != '#' && !contains(&closed_list, neighbor))
             {
                 uint tentative_g = current.g + 1;
@@ -188,6 +218,7 @@ fn int cheapest_path(String[] grid)
         {
             Cost neighbor = current;
             neighbor.pos.y += 1;
+            neighbor.from = (int) closed_list.len() - 1;
             if (grid[neighbor.pos.y][neighbor.pos.x] != '#' && !contains(&closed_list, neighbor))
             {
                 uint tentative_g = current.g + 1;
@@ -198,73 +229,40 @@ fn int cheapest_path(String[] grid)
         {
             Cost neighbor = current;
             neighbor.pos.y -= 1;
+            neighbor.from = (int) closed_list.len() - 1;
             if (grid[neighbor.pos.y][neighbor.pos.x] != '#' && !contains(&closed_list, neighbor))
             {
                 uint tentative_g = current.g + 1;
                 update_open_list(&open_list, neighbor, goal, tentative_g);
             }
         }
-
-        if (open_list.len() == 0)
-        {
-            best = -1;
-        }
     }
 
-    return best;
+    return construct_path(closed_list);
 } 
-
-fn List(<Vector2>) get_wall_list(String[] input)
-{
-    List(<Vector2>) walls;
-
-    for(int i = 1; i < input.len-1; i++)
-    {
-        for(int j = 1; j < input[0].len-1; j++)
-        {
-            char item = input[i][j];
-            if (item != '#')
-            {
-                continue;
-            }
-
-            if (input[i+1][j] != '#' && input[i-1][j] != '#' ||
-                input[i][j+1] != '#' && input[i][j-1] != '#')
-            {
-                Vector2 pos;
-                pos.x = j;
-                pos.y = i;
-                walls.push(pos);
-            }
-        }
-    }
-
-    return walls;
-}
 
 fn void process(String data, bool is_part_b)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);
 
-    ulong cost = cheapest_path(grid);
+    uint count = 0;
+    List(<Vector2>) path = cheapest_path(grid);
 
-    ulong total_save = 0;
-
-    List(<Vector2>) wall_list = get_wall_list(grid);
-    foreach(uint i, Vector2 wall : wall_list)
+    for(int i = 0; i < path.len(); i++)
     {
-        io::printfn("Testing %d of %d", i, wall_list.len());
-        grid[wall.y][wall.x] = '.';
-        int new_cost = cheapest_path(grid);
-        grid[wall.y][wall.x] = '#';
-        
-        ulong saved = cost - new_cost;
-        if (saved >= 100)
+        Vector2 a = path[i];
+        for(int j = i+1; j < path.len(); j++)
         {
-            total_save++;
+            Vector2 b = path[j];
+            Vector2 diff = a.minus(b);
+            uint saved = j - i - diff.length();
+            if (diff.length() == 2 && saved >= 100)
+            {
+                count++;
+            }               
         }
     }
 
-    io::printfn("Total save is %d", total_save);
+    io::printfn("Total save is %d", count);
 }
