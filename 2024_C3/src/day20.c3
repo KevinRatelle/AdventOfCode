@@ -246,9 +246,12 @@ fn void process(String data, bool is_part_b)
     String[] grid = data.split("\r\n");
 	defer free(grid);
 
-    uint count = 0;
     List(<Vector2>) path = cheapest_path(grid);
+    defer path.free();
 
+    uint k_max_jump = is_part_b ? 20 : 2;
+
+    uint count = 0;
     for(int i = 0; i < path.len(); i++)
     {
         Vector2 a = path[i];
@@ -257,12 +260,12 @@ fn void process(String data, bool is_part_b)
             Vector2 b = path[j];
             Vector2 diff = a.minus(b);
             uint saved = j - i - diff.length();
-            if (diff.length() == 2 && saved >= 100)
+            if (diff.length() <= k_max_jump && saved >= 100)
             {
                 count++;
             }               
         }
     }
 
-    io::printfn("Total save is %d", count);
+    io::printfn("Path count is %d", count);
 }
