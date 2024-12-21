@@ -360,6 +360,7 @@ fn void process(String data, bool is_part_b)
     uint total = 0;
     foreach(String line : lines)
     {
+        io::printfn("Doing step %s", line);
         if (line == "")
         {
             break;
@@ -367,45 +368,35 @@ fn void process(String data, bool is_part_b)
 
         uint value = to_value(line);
 
-        List(<CharList>) current = compute_full_path(line, true);
-        List(<CharList>) level1;
-        List(<CharList>) level2;
-        foreach(CharList item : current)
+        List(<CharList>) level = compute_full_path(line, true);
+
+        uint depth = 0;
+        while(depth++ < 2)
         {
-            String strcc = (String) item.to_tarray();
-            CharList cpy;
-            cpy.add_all(&item);
-            String str = (String) cpy.to_tarray();
-            io::printn(str);
+            List(<CharList>) level_copy;
+            level_copy.add_all(&level);
 
-            List(<CharList>) layer1 = compute_full_path(str, false);
-            foreach(CharList item1 : layer1)
+            level.free();
+
+            foreach(CharList item : level_copy)
             {
-                level1.push(item1);
-            }
-        }
-
-        foreach(CharList item : level1)
-        {
-            String strcc = (String) item.to_tarray();
-            CharList cpy;
-            cpy.add_all(&item);
-            String str = (String) cpy.to_tarray();
-           // io::printn(str);
-
-            List(<CharList>) layer2 = compute_full_path(str, false);
-            foreach(CharList item1 : layer2)
-            {
-                level2.push(item1);
+                String strcc = (String) item.to_tarray();
+                CharList cpy;
+                cpy.add_all(&item);
+                String str = (String) cpy.to_tarray();
+    
+                List(<CharList>) layer2 = compute_full_path(str, false);
+                foreach(CharList item1 : layer2)
+                {
+                    level.push(item1);
+                }
             }
         }
 
         uint shortest = 1000;
-        foreach(CharList item : level2)
+        foreach(CharList item : level)
         {
             String str = (String) item.to_tarray();
-            //io::printn(str);
-
             if (str.len < shortest)
             {
                 shortest = str.len;
