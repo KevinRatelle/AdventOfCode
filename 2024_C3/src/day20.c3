@@ -214,11 +214,57 @@ fn int cheapest_path(String[] grid)
     return best;
 } 
 
+fn List(<Vector2>) get_wall_list(String[] input)
+{
+    List(<Vector2>) walls;
+
+    for(int i = 1; i < input.len-1; i++)
+    {
+        for(int j = 1; j < input[0].len-1; j++)
+        {
+            char item = input[i][j];
+            if (item != '#')
+            {
+                continue;
+            }
+
+            if (input[i+1][j] != '#' && input[i-1][j] != '#' ||
+                input[i][j+1] != '#' && input[i][j-1] != '#')
+            {
+                Vector2 pos;
+                pos.x = j;
+                pos.y = i;
+                walls.push(pos);
+            }
+        }
+    }
+
+    return walls;
+}
+
 fn void process(String data, bool is_part_b)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);
 
-    int cost = cheapest_path(grid);
-    io::printfn("Total is %d", cost);
+    ulong cost = cheapest_path(grid);
+
+    ulong total_save = 0;
+
+    List(<Vector2>) wall_list = get_wall_list(grid);
+    foreach(uint i, Vector2 wall : wall_list)
+    {
+        io::printfn("Testing %d of %d", i, wall_list.len());
+        grid[wall.y][wall.x] = '.';
+        int new_cost = cheapest_path(grid);
+        grid[wall.y][wall.x] = '#';
+        
+        ulong saved = cost - new_cost;
+        if (saved >= 100)
+        {
+            total_save++;
+        }
+    }
+
+    io::printfn("Total save is %d", total_save);
 }
