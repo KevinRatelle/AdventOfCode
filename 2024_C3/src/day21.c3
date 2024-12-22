@@ -1,5 +1,6 @@
 import std::io;
 import std::collections::list;
+import std::collections::map;
 
 // Pad0
 //789
@@ -302,7 +303,7 @@ fn List(<CharList>) compute_full_path(String chain, bool default_grid)
             from = chain[i-1];
         }
         char to = chain[i];
-        //io::printfn("Searching %c %c", from, to);
+
         List(<CharList>) shortests = shortest_paths(from, to, default_grid);
         if (shortests.len() == 0)
         {
@@ -313,7 +314,6 @@ fn List(<CharList>) compute_full_path(String chain, bool default_grid)
         {
             foreach(CharList list : shortests)
             {
-               //io::printfn("List %s", (String) list.to_tarray());
                 out.push(list);
             }
         }
@@ -340,10 +340,10 @@ fn List(<CharList>) compute_full_path(String chain, bool default_grid)
     return out;
 }
 
-fn uint to_value(String data)
+fn ulong to_value(String data)
 {
     String inner = data[..data.len-2];
-    uint! out = inner.to_uint();
+    ulong! out = inner.to_ulong();
     if (catch err = out)
     {
         return 0;
@@ -357,7 +357,7 @@ fn void process(String data, bool is_part_b)
     String[] lines = data.split("\r\n");
 	defer free(lines);
 
-    uint total = 0;
+    ulong total = 0;
     foreach(String line : lines)
     {
         io::printfn("Doing step %s", line);
@@ -366,7 +366,7 @@ fn void process(String data, bool is_part_b)
             break;
         }
 
-        uint value = to_value(line);
+        ulong value = to_value(line);
 
         List(<CharList>) level = compute_full_path(line, true);
 
@@ -385,15 +385,16 @@ fn void process(String data, bool is_part_b)
                 cpy.add_all(&item);
                 String str = (String) cpy.to_tarray();
     
-                List(<CharList>) layer2 = compute_full_path(str, false);
-                foreach(CharList item1 : layer2)
+                List(<CharList>) layer = compute_full_path(str, false);
+
+                foreach(CharList item1 : layer)
                 {
                     level.push(item1);
                 }
             }
         }
 
-        uint shortest = 1000;
+        ulong shortest = 100000;
         foreach(CharList item : level)
         {
             String str = (String) item.to_tarray();
