@@ -304,8 +304,29 @@ fn List(<CharList>) shortest_paths(char from, char to, bool default_grid)
     return shortest_path_vec(from_pos, to_pos, default_grid);
 }
 
-fn ulong compute_cost(char from, char to, char layer, bool default_grid)
+fn ulong generate_key(char from, char to, char layer)
 {
+    uint from_offset = ($sizeof(layer) + $sizeof(to)) * 8;
+    uint to_offset = $sizeof(layer) * 8;
+    return (ulong) from << from_offset +
+           (ulong) to << to_offset +
+           (ulong) layer;       
+}
+
+fn ulong compute_cost(char from, char to, Map(<ulong, ulong>)* cached, char layer, bool default_grid)
+{
+    ulong key = generate_key(from, to, layer);
+    if (cached.has_key(key))
+    {
+        ulong! cached_cost = cached.get(key);
+        if (catch err = cached_cost)
+        {
+            return 0;
+        }
+
+        return cached_cost;
+    }
+
     List(<CharList>) paths = shortest_paths(from, to, default_grid);
     ulong cost = ulong.max;
 
@@ -323,24 +344,25 @@ fn ulong compute_cost(char from, char to, char layer, bool default_grid)
 
     foreach(path : paths)
     {
-        ulong current_cost = compute_cost_chain((String) path.to_tarray(), layer-1, false);
+        ulong current_cost = compute_cost_chain((String) path.to_tarray(), cached, layer-1, false);
         if (current_cost < cost)
         {
             cost = current_cost;
         }
     }
 
+    cached.set(key, cost);
     return cost;
 }
 
-fn ulong compute_cost_chain(String chain, char layer, bool default_grid)
+fn ulong compute_cost_chain(String chain, Map(<ulong, ulong>)* cached, char layer, bool default_grid)
 {
     ulong cost = 0;
     for(int i = 0; i < chain.len; i++)
     {
         char from = i > 0 ? chain[i-1] : 'A';
         char to = chain[i];
-        cost += compute_cost(from, to, layer, default_grid);
+        cost += compute_cost(from, to, cached, layer, default_grid);
     }
 
     return cost;
@@ -361,7 +383,9 @@ fn void process(String data, bool is_part_b)
         }
 
         ulong value = to_value(line);
-        ulong shortest = compute_cost_chain(line, 9, true);
+
+        Map(<ulong, ulong>) cached_cost;
+        ulong shortest = compute_cost_chain(line, &cached_cost, 25, true);
 
         io::printfn("Current step %s %s", shortest, value);
         total+=shortest*value;
