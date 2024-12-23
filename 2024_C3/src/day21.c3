@@ -20,6 +20,18 @@ struct Vector2
     int y;
 }
 
+fn ulong to_value(String data)
+{
+    String inner = data[..data.len-2];
+    ulong! out = inner.to_ulong();
+    if (catch err = out)
+    {
+        return 0;
+    }
+
+    return out;
+}
+
 fn Vector2 to_position_small(char c)
 {
     Vector2 out;
@@ -292,64 +304,46 @@ fn List(<CharList>) shortest_paths(char from, char to, bool default_grid)
     return shortest_path_vec(from_pos, to_pos, default_grid);
 }
 
-fn List(<CharList>) compute_full_path(String chain, bool default_grid)
+fn ulong compute_cost(char from, char to, char layer, bool default_grid)
 {
-    List(<CharList>) out;
-    for(int i = 0; i < chain.len; i++)
+    List(<CharList>) paths = shortest_paths(from, to, default_grid);
+    ulong cost = ulong.max;
+
+    if (layer == 0)
     {
-        char from = 'A';
-        if (i > 0)
+        foreach(path : paths)
         {
-            from = chain[i-1];
-        }
-        char to = chain[i];
-
-        List(<CharList>) shortests = shortest_paths(from, to, default_grid);
-        if (shortests.len() == 0)
-        {
-            continue;
-        }
-
-        if (i == 0)
-        {
-            foreach(CharList list : shortests)
+            if (path.len() < cost)
             {
-                out.push(list);
+                cost = path.len();
             }
         }
-        else
-        {
-            foreach(&outsub : out)
-            {
-                List(<char>) new_cpy;
-                char[] cpy = outsub.to_new_array();
-                new_cpy.init_wrapping_array(cpy);
+        return cost;
+    }
 
-                outsub.add_all(&shortests[0]);
-                for(int j = 1; j < shortests.len(); j++)
-                {
-                    List(<char>) new_new_cpy;
-                    new_new_cpy.add_all(&new_cpy);
-                    out.push(new_new_cpy);
-                    out[out.len()-1].add_all(&shortests[j]);
-                }
-            }
+    foreach(path : paths)
+    {
+        ulong current_cost = compute_cost_chain((String) path.to_tarray(), layer-1, false);
+        if (current_cost < cost)
+        {
+            cost = current_cost;
         }
     }
 
-    return out;
+    return cost;
 }
 
-fn ulong to_value(String data)
+fn ulong compute_cost_chain(String chain, char layer, bool default_grid)
 {
-    String inner = data[..data.len-2];
-    ulong! out = inner.to_ulong();
-    if (catch err = out)
+    ulong cost = 0;
+    for(int i = 0; i < chain.len; i++)
     {
-        return 0;
+        char from = i > 0 ? chain[i-1] : 'A';
+        char to = chain[i];
+        cost += compute_cost(from, to, layer, default_grid);
     }
 
-    return out;
+    return cost;
 }
 
 fn void process(String data, bool is_part_b)
@@ -367,42 +361,7 @@ fn void process(String data, bool is_part_b)
         }
 
         ulong value = to_value(line);
-
-        List(<CharList>) level = compute_full_path(line, true);
-
-        uint depth = 0;
-        while(depth++ < 2)
-        {
-            List(<CharList>) level_copy;
-            level_copy.add_all(&level);
-
-            level.free();
-
-            foreach(CharList item : level_copy)
-            {
-                String strcc = (String) item.to_tarray();
-                CharList cpy;
-                cpy.add_all(&item);
-                String str = (String) cpy.to_tarray();
-    
-                List(<CharList>) layer = compute_full_path(str, false);
-
-                foreach(CharList item1 : layer)
-                {
-                    level.push(item1);
-                }
-            }
-        }
-
-        ulong shortest = 100000;
-        foreach(CharList item : level)
-        {
-            String str = (String) item.to_tarray();
-            if (str.len < shortest)
-            {
-                shortest = str.len;
-            }
-        }
+        ulong shortest = compute_cost_chain(line, 9, true);
 
         io::printfn("Current step %s %s", shortest, value);
         total+=shortest*value;
