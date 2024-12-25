@@ -154,25 +154,34 @@ fn void Circuit.compute_signals(Circuit* this)
     }
 }
 
+fn ulong Circuit.run_and_compute_output(Circuit* this)
+{
+    while(this.tick())
+    {
+    }
+
+    return this.compute_output('z');
+}
+
 fn bool Circuit.tick(Circuit* this)
 {
     this.compute_signals();
     return this.compute_gates();
 }
 
-fn ulong Circuit.compute_output(Circuit* this)
+fn ulong Circuit.compute_output(Circuit* this, char in)
 {
     ulong out = 0;
 
     String[] keys = this.wires.tcopy_keys();
     foreach(key : keys)
     {
-        if (key[0] != 'z')
+        if (key[0] != in)
         {
             continue;
         }
 
-        ulong! index = key[1..].to_ulong();
+        uint! index = key[1..].to_uint();
         if (catch err = index)
         {
             continue;
@@ -191,6 +200,102 @@ fn ulong Circuit.compute_output(Circuit* this)
     return out;
 }
 
+fn uint Circuit.count_gates(Circuit* this, Type type)
+{
+    uint count = 0;
+    foreach(Gate gate : this.gates)
+    {
+        if (gate.type == type)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+fn bool is_on(ulong val, uint bit)
+{
+    uint bit_total = $sizeof(val) * 8;
+    ulong out = (val << (bit_total - bit - 1)) >> (bit_total - 1);
+    return out != 0;
+}
+
+fn void Circuit.set_inputs(Circuit* this, ulong x, ulong y)
+{
+    // set ALL to UNSET, then set Xs and then Ys
+    String[] keys = this.wires.tcopy_keys();
+    foreach(key : keys)
+    {
+        Wire*! wire = this.wires.get_ref(key);
+        if (catch err = wire)
+        {
+            continue;
+        }
+
+        bool isX = key[0] == 'x';
+        bool isY = key[0] == 'y';
+        if (!isX && !isY)
+        {
+            wire.value = Signal.UNSET;
+            continue;
+        }
+
+
+        uint! bit = key[1..].to_uint();
+        if(catch err = bit)
+        {
+            continue;
+        }
+
+        ulong val = isX ? x : y;
+        wire.value = is_on(val, bit) ? Signal.TRUE : Signal.FALSE;
+    }
+
+    foreach(i, gate : this.gates)
+    {
+        this.gates[i].a = Signal.UNSET;
+        this.gates[i].b = Signal.UNSET;
+        this.gates[i].set = false;
+    }
+}
+
+fn void Circuit.find_issues(Circuit* this)
+{
+    // after inspection, I see 45 bit for X, 45 bit for Y and 46 bit for Z output
+    // I expect its a 45 bit adder + 1 bit carry for the output
+    // usual version of full adder is made up of 2xN XOR gates, 2xN AND gates and 1xN OR gates = 5n gates
+    // for 45 bit, it's about 225 gates, but I see only 222. It means they do not have a carry bit
+    // for the inputs (which does not appear so from X, Y and problem statement)
+    // so the first adder is not a full adder, it's a half adder, using 1 xor and 1 and gate.
+
+    // I expect thus : 2x44 + 1 XOR, 2x44 AND + 1 and 44 OR, for a total of 89 + 89 + 44 = 178 + 44 = 222
+    assert(this.count_gates(Type.XOR) == 89);
+    assert(this.count_gates(Type.AND) == 89);
+    assert(this.count_gates(Type.OR) == 44);
+
+    // my idea is to try to add 1 and 1, and then multiple of 2s, it should isolate each full adder
+    // by adding 1 and 1, we test only the half-adder, by adding 2 and 2, we test only the 1st full-adder
+    // then, by knowing which bits are wrong, we'll see what to do
+    uint offset = 0;
+    while (offset < 44)
+    {
+        ulong in = ((ulong)1 << offset);
+
+        this.set_inputs(in, in);
+        ulong outx = this.compute_output('x');
+        ulong outy = this.compute_output('y');
+        ulong out = this.run_and_compute_output();
+        io::printfn("Got output %d + %d = %d (expected %d)", outx, outy, out, outx+outy);
+
+        offset++;
+    }
+
+    // THE REST WAS DONE MANUALLY BY CHEKING THE CIRCUIT AROUND THE WRONG OUTPUTS FOR EACH BIT
+    // I'LL TRY TO GET SOMETHING AUTOMATED IF IT IS POSSIBLE BUT IT SEEMS HARD
+    // SOLUTION FOUND : cpm,ghp,gpr,krs,nks,z10,z21,z33
+
+}
 
 fn void process(String data, bool is_part_b)
 {
@@ -253,13 +358,14 @@ fn void process(String data, bool is_part_b)
         }
     }
 
-    uint tick = 0;
-    while(circuit.tick())
+
+    if (!is_part_b)
     {
-        io::printfn("Tick %d", ++tick);
+        ulong out = circuit.run_and_compute_output();
+        io::printfn("Got out %d", out);
     }
-
-    ulong out = circuit.compute_output();
-
-    io::printfn("Got out %d", out);
+    else
+    {
+        circuit.find_issues();
+    }
 }
