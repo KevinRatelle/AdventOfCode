@@ -4,11 +4,11 @@ import std::io;
 import std::collections::list;
 import std::time;
 
-import day24;
+import day25;
 
 fn int main(String[] args)
 {
-	String file_name = "resources/day24.txt";
+	String file_name = "resources/day25.txt";
 	String! data = (String) io::file::load_new(file_name);
 	if (catch error = data)
 	{
@@ -19,7 +19,7 @@ fn int main(String[] args)
 
 	Time start = time::now();
 	bool is_part_b = false;
-	day24::process(data, is_part_b);
+	day25::process(data, is_part_b);
 
 	Duration elapsed = time::now().diff_us(start);
 	io::printfn("Elapsed: %d ms", elapsed.to_ms());
