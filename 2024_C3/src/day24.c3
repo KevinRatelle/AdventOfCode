@@ -160,6 +160,38 @@ fn bool Circuit.tick(Circuit* this)
     return this.compute_gates();
 }
 
+fn ulong Circuit.compute_output(Circuit* this)
+{
+    ulong out = 0;
+
+    String[] keys = this.wires.tcopy_keys();
+    foreach(key : keys)
+    {
+        if (key[0] != 'z')
+        {
+            continue;
+        }
+
+        ulong! index = key[1..].to_ulong();
+        if (catch err = index)
+        {
+            continue;
+        }
+
+        Wire! wire = this.wires.get(key);
+        if (catch err = wire)
+        {
+            continue;
+        }
+
+        ulong val = wire.value == Signal.TRUE ? 1 : 0;
+        out += (val << index);
+    }
+
+    return out;
+}
+
+
 fn void process(String data, bool is_part_b)
 {
     String[] lines = data.split("\r\n");
@@ -221,30 +253,13 @@ fn void process(String data, bool is_part_b)
         }
     }
 
-    ulong out;
-    String[] keys = circuit.wires.tcopy_keys();
-    foreach(key : keys)
+    uint tick = 0;
+    while(circuit.tick())
     {
-        if (key[0] != 'z')
-        {
-            continue;
-        }
-
-        ulong! index = key[1..].to_ulong();
-        if (catch err = index)
-        {
-            continue;
-        }
-
-        Wire! wire = circuit.wires.get(key);
-        if (catch err = wire)
-        {
-            continue;
-        }
-
-        ulong val = wire.value == Signal.TRUE ? 1 : 0;
-        out += (val << index);
+        io::printfn("Tick %d", ++tick);
     }
+
+    ulong out = circuit.compute_output();
 
     io::printfn("Got out %d", out);
 }
