@@ -422,7 +422,7 @@ fn void Circuit.find_issues(Circuit* this)
     String carry;
     List(<Swap>) wrong_gates;
 
-
+    io::printfn("Step 1 : Finding gate pairs that can be wrong.");
     while (offset < 44)
     {
         ulong inx = ((ulong)1 << offset);
@@ -455,7 +455,7 @@ fn void Circuit.find_issues(Circuit* this)
 
             assert(wireX.gates.len() == 2);
             assert(wireY.gates.len() == 2);
-
+            ulong[2] gate_index_saved = {0,0};
             bool has_z00_out = false;
             foreach(gate_index : wireX.gates)
             {
@@ -463,9 +463,11 @@ fn void Circuit.find_issues(Circuit* this)
                 if (gate.wire == "z00")
                 {
                     has_z00_out = true;
+                    gate_index_saved[0] = gate_index.gate;
                 }
                 else
                 {
+                    gate_index_saved[1] = gate_index.gate;
                     carry = gate.wire;
                 }
             }
@@ -473,7 +475,7 @@ fn void Circuit.find_issues(Circuit* this)
             assert(has_z00_out);
 
             has_z00_out = false;
-            ulong[2] gate_index_saved = {0,0};
+
             int ii = 0;
             foreach(gate_index : wireY.gates)
             {
@@ -490,7 +492,6 @@ fn void Circuit.find_issues(Circuit* this)
                 }
             }
             assert(has_z00_out);
-            io::printn(carry);
 
             if (gate_index_saved[0] > gate_index_saved[1])
             {
@@ -517,8 +518,6 @@ fn void Circuit.find_issues(Circuit* this)
                     }
                 }
             }
-
-            io::printn(wrong_gates_queue.len());
         }
         else
         {
@@ -546,7 +545,7 @@ fn void Circuit.find_issues(Circuit* this)
                 }
             }
 
-            io::printfn("With bit %d : expected %d but got %d", offset, expected, out);
+            io::printfn("   - Wrong bit found %d.", offset);
         }
 
         inx = ((ulong)1 << offset);
@@ -569,8 +568,6 @@ fn void Circuit.find_issues(Circuit* this)
                     wrong_gates_queue.remove_at(i);
                 }
             }
-
-            io::printn(wrong_gates_queue.len());
         }
         else
         {
@@ -606,24 +603,17 @@ fn void Circuit.find_issues(Circuit* this)
     // first try to reduce the complexity of the problem by swaping the output with others
     // and see if it fixes the issue
 
-    foreach(i : wrong_gates_queue)
-    {
-        io::printn(this.gates[i]);
-    }
-    io::printfn("----------------------------------");
-    io::printfn("Pair %d", wrong_gates.len());
-    foreach(wrong_gate : wrong_gates)
-    {
-        io::printn(wrong_gate);
-    }
+
+    io::printfn("Left witfh %d pairs of gates to check", wrong_gates.len());
 
     List(<Swap>) pairs = wrong_gates;
 
-    uint count = 0;
+    io::printfn("Step 2 : Generate potential solutions containing 4 swaps.");
+
     List(<Swap[4]>) solutions;
     for(int i = 0; i < pairs.len(); i++)
     {
-        io::printfn("Step %d of %d", i+1, pairs.len());
+        io::printfn("   - %d of %d", i+1, pairs.len());
         Swap p1 = pairs[i];
         String p1a = this.gates[p1.a].wire;
         String p1b = this.gates[p1.b].wire;
@@ -684,7 +674,6 @@ fn void Circuit.find_issues(Circuit* this)
 
                     if (all_good)
                     {
-                        count++;
                         Swap[4] sol = {p1, p2, p3, p4};
                         solutions.push(sol);
                         //io::printfn("%s %s --- %s %s --- %s %s --- %s %s", p1a, p1b, p2a, p2b, p3a, p3b, p4a, p4b);
@@ -699,8 +688,11 @@ fn void Circuit.find_issues(Circuit* this)
         this.swap_gate_output(p1a, p1b);
     }
 
-    io::printfn("AT THIS POINT I HAVE %d solutions", count);
+    io::printfn("Left with potential %d solutions.", solutions.len());
 
+    io::printfn("Step 3 : Going through all solutions and testinf or simple inputs.");
+
+    uint eliminated = 0;
     for(int i = (int) solutions.len()-1; i >= 0; i--)
     {
         Swap[4] sol = solutions[i];
@@ -737,7 +729,7 @@ fn void Circuit.find_issues(Circuit* this)
 
         if (!all_good)
         {
-            io::printfn("ELIMINATED BAD");
+            io::printfn("   - Bad solution eliminated %d", ++eliminated);
             solutions.remove_at(i);
         } 
 
@@ -747,23 +739,12 @@ fn void Circuit.find_issues(Circuit* this)
         this.swap_gate_output(g, h);
     }
 
-    io::printfn("AT THIS POINT I HAVE %d solutions", solutions.len());
-    foreach(sol : solutions)
-    {
-        String a = this.gates[sol[0].a].wire;
-        String b = this.gates[sol[0].b].wire;
-        String c = this.gates[sol[1].a].wire;
-        String d = this.gates[sol[1].b].wire;
-        String e = this.gates[sol[2].a].wire;
-        String f = this.gates[sol[2].b].wire;
-        String g = this.gates[sol[3].a].wire;
-        String h = this.gates[sol[3].b].wire;
-        io::printfn("%s %s --- %s %s --- %s %s --- %s %s", a, b, c, d, e, f, g, h);
-    }
+    io::printfn("Left with potential %d solutions.", solutions.len());
 
-
+    io::printfn("Step 4 : Using random inputs to force the wrong solutions left out.");
     SimpleRandom rand;
-    while(true)
+    uint random_count = 0;
+    while(++random_count)
     {
         ulong inx = (rand.next_long() << 20) >> 20;
         ulong iny = (rand.next_long() << 20) >> 20;
@@ -795,7 +776,7 @@ fn void Circuit.find_issues(Circuit* this)
 
             if(result != expected)
             {
-                io::printfn("ELIMINATED by random value");
+                io::printfn("   - Bad solution eliminated.");
                 solutions.remove_at(i);
             }
         }
@@ -805,8 +786,6 @@ fn void Circuit.find_issues(Circuit* this)
             break;
         }  
     }
-
-    io::printfn("AT THIS POINT I HAVE %d solutions", solutions.len());
 
     assert(solutions.len() == 1);
     String a = this.gates[solutions[0][0].a].wire;
@@ -819,9 +798,11 @@ fn void Circuit.find_issues(Circuit* this)
     String h = this.gates[solutions[0][3].b].wire;
 
     String[8] result = {a, b, c, d, e, f, g, h};
-
     String[8] res = sort_output(result);
 
+    io::printfn("Step 5 : sorting the result.");
+
+    io::printf("RESULT : ");
     foreach(iii, r : res)
     {
         if (iii != 0)
@@ -832,7 +813,7 @@ fn void Circuit.find_issues(Circuit* this)
         io::print(r);
     }
 
-    io::prinfn("");
+    io::printn("");
 }
 
 fn void process(String data, bool is_part_b)
