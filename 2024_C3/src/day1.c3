@@ -55,7 +55,7 @@ fn uint! compute_total(List(<int>) a, List(<int>) b)
     return sum;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -65,8 +65,6 @@ fn void process(String data, bool is_part_b)
 
     for (int i = 0; i < lines.len; i++)
     {
-        io::printn(lines[i]);
-
         String[] values = lines[i].split("   ");
         if (values.len < 2)
         {

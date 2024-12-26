@@ -58,7 +58,7 @@ fn bool is_report_safe_with_dampener(String[] report)
     return false;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
