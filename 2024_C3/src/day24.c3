@@ -1,6 +1,7 @@
 import std::io;
 import std::collections::list;
 import std::collections::map;
+import std::math::random;
 
 enum Signal
 {
@@ -156,8 +157,13 @@ fn void Circuit.compute_signals(Circuit* this)
 
 fn ulong Circuit.run_and_compute_output(Circuit* this)
 {
+    uint tick_count = 0;
     while(this.tick())
     {
+        if (tick_count++ > 150)
+        {
+            return -1;
+        }
     }
 
     return this.compute_output('z');
@@ -260,41 +266,573 @@ fn void Circuit.set_inputs(Circuit* this, ulong x, ulong y)
     }
 }
 
+fn void Circuit.swap_gate_output(Circuit* this, String a, String b)
+{
+    foreach(&gate : this.gates)
+    {
+        if (gate.wire == a)
+    	{
+            gate.wire = b;
+        }
+        else if (gate.wire == b)
+        {
+            gate.wire = a;
+        }
+    }
+}
+
+fn uint Circuit.get_connection(Circuit* this, String wire_name, Type gate_type)
+{
+    String[] keys = this.wires.tcopy_keys();
+    foreach(key : keys)
+    {
+        if (key != wire_name)
+        {
+            continue;
+        }
+
+        Wire! wire = this.wires.get(key);
+        if (catch err = wire)
+        {
+            continue;
+        }
+
+        foreach(connection : wire.gates)
+        {
+            if (this.gates[connection.gate].type == gate_type)
+            {
+                return connection.gate;
+            }
+        }
+    }
+
+    return 0;
+}
+
+fn uint[2] Circuit.check_gates_sum(Circuit* this, uint gate_index)
+{
+    // note : index in the schematic, not in the gate list
+    uint[2] out;
+
+    char[3] buf;
+    String! y = (String) io::bprintf(&buf, "y%0.2d", gate_index);
+    if (catch err = y)
+    {
+        return out;
+    }
+
+    out[0] = this.get_connection(y, Type.XOR);
+
+    String other = this.gates[out[0]].wire;
+    out[1] = this.get_connection(other, Type.XOR);
+
+    return out;
+}
+
+fn uint[3] Circuit.check_gates_carry(Circuit* this, uint gate_index, String* carry)
+{
+    // note : index in the schematic, not in the gate list
+    uint[3] out;
+
+    char[3] buf;
+    String! y = (String) io::bprintf(&buf, "y%0.2d", gate_index);
+    if (catch err = y)
+    {
+        return out;
+    }
+
+    out[0] = this.get_connection(y, Type.AND);
+
+    String other = this.gates[out[0]].wire;
+    out[1] = this.get_connection(other, Type.OR);
+    out[2] = this.get_connection(*carry, Type.AND);
+
+    *carry = this.gates[out[1]].wire;
+
+    return out;
+}
+
+struct Swap
+{
+    uint a;
+    uint b;
+}
+
+fn bool Swap.equals(Swap* this, Swap other)
+{
+    return this.a == other.a && this.b == other.b ||
+           this.b == other.a && this.a == other.b;
+}
+
+fn uint to_value(String a)
+{
+    return a[0] << 16 + a[1] << 8 + a[2];
+}
+
+fn String[8] sort_output(String[8] in)
+{
+    String[8] sorted;
+
+    for(int i = 0; i < 8; i++)
+    {
+        uint index = 0;
+        uint smallest = uint.max;
+        for (int j = 0; j < 8; j++)
+        {
+            if (in[j] == "")
+            {
+                continue;
+            }
+
+            uint value = to_value(in[j]);
+            if (value < smallest)
+            {
+                smallest = value;
+                index = j;
+            }
+        }
+
+        sorted[i] = in[index];
+        in[index] = "";
+    }
+
+    return sorted;
+}
+
 fn void Circuit.find_issues(Circuit* this)
 {
-    // after inspection, I see 45 bit for X, 45 bit for Y and 46 bit for Z output
-    // I expect its a 45 bit adder + 1 bit carry for the output
-    // usual version of full adder is made up of 2xN XOR gates, 2xN AND gates and 1xN OR gates = 5n gates
-    // for 45 bit, it's about 225 gates, but I see only 222. It means they do not have a carry bit
-    // for the inputs (which does not appear so from X, Y and problem statement)
-    // so the first adder is not a full adder, it's a half adder, using 1 xor and 1 and gate.
-
-    // I expect thus : 2x44 + 1 XOR, 2x44 AND + 1 and 44 OR, for a total of 89 + 89 + 44 = 178 + 44 = 222
+    // From inspection of the data :
+    // Adder of 44 bit integers, with a carry bit out, but not in, so it contains:
+    //      - 2 44 bit inputs, 1 45 bit output
+    //      - 44 full adders
+    //      - 1 half adder (first bit)
+    // This adds up to:
     assert(this.count_gates(Type.XOR) == 89);
     assert(this.count_gates(Type.AND) == 89);
     assert(this.count_gates(Type.OR) == 44);
 
-    // my idea is to try to add 1 and 1, and then multiple of 2s, it should isolate each full adder
-    // by adding 1 and 1, we test only the half-adder, by adding 2 and 2, we test only the 1st full-adder
-    // then, by knowing which bits are wrong, we'll see what to do
+    // We can test each full adder by adding number containing a single bit
+    List(<uint>) wrong_gates_queue;
+    for(uint i = 0; i < this.gates.len(); i++)
+    {
+        wrong_gates_queue.push(i);
+    }
+
     uint offset = 0;
+    String carry;
+    List(<Swap>) wrong_gates;
+
+
     while (offset < 44)
     {
-        ulong in = ((ulong)1 << offset);
+        ulong inx = ((ulong)1 << offset);
+        ulong iny = 0;
+        ulong expected = inx + iny;
 
-        this.set_inputs(in, in);
-        ulong outx = this.compute_output('x');
-        ulong outy = this.compute_output('y');
+        this.set_inputs(inx, iny);
         ulong out = this.run_and_compute_output();
-        io::printfn("Got output %d + %d = %d (expected %d)", outx, outy, out, outx+outy);
+
+        if (offset == 0)
+        {
+            // TODO : this is ugly and should be split too between checking SUM and CARRY
+            // trigger if half-adder is wrong, the logic would need to change
+            assert(out == expected);
+            
+            String x = "x00";
+            String y = "y00";
+            
+            Wire! wireX = this.wires.get(x);
+            if (catch err = wireX)
+            {
+                continue;
+            }
+
+            Wire! wireY = this.wires.get(y);
+            if (catch err = wireY)
+            {
+                continue;
+            }
+
+            assert(wireX.gates.len() == 2);
+            assert(wireY.gates.len() == 2);
+
+            bool has_z00_out = false;
+            foreach(gate_index : wireX.gates)
+            {
+                Gate gate = this.gates[gate_index.gate];
+                if (gate.wire == "z00")
+                {
+                    has_z00_out = true;
+                }
+                else
+                {
+                    carry = gate.wire;
+                }
+            }
+
+            assert(has_z00_out);
+
+            has_z00_out = false;
+            ulong[2] gate_index_saved = {0,0};
+            int ii = 0;
+            foreach(gate_index : wireY.gates)
+            {
+                Gate gate = this.gates[gate_index.gate];
+                if (gate.wire == "z00")
+                {
+                    gate_index_saved[0] = gate_index.gate;
+                    has_z00_out = true;
+                }
+                else
+                {
+                    gate_index_saved[1] = gate_index.gate;
+                    assert(carry == gate.wire);
+                }
+            }
+            assert(has_z00_out);
+            io::printn(carry);
+
+            if (gate_index_saved[0] > gate_index_saved[1])
+            {
+                wrong_gates_queue.remove_at(gate_index_saved[0]);
+                wrong_gates_queue.remove_at(gate_index_saved[1]);
+            }
+            else
+            {
+                wrong_gates_queue.remove_at(gate_index_saved[1]);
+                wrong_gates_queue.remove_at(gate_index_saved[0]);
+            }
+        }
+        else if (expected == out)
+        {
+            {
+                uint[2] affected_gates = this.check_gates_sum(offset);
+
+                for(int i = (int)wrong_gates_queue.len() - 1; i>=0; i--)
+                {
+                    if (wrong_gates_queue[i] == affected_gates[0] ||
+                        wrong_gates_queue[i] == affected_gates[1])
+                    {
+                        wrong_gates_queue.remove_at(i);
+                    }
+                }
+            }
+
+            io::printn(wrong_gates_queue.len());
+        }
+        else
+        {
+
+            uint[2] affected_gates = this.check_gates_sum(offset);
+            foreach(gate : affected_gates)
+            {
+                String a = this.gates[gate].wire;
+                for(int i = (int)wrong_gates_queue.len() - 1; i>=0; i--)
+                {
+                    String b = this.gates[wrong_gates_queue[i]].wire;
+                    this.set_inputs(inx, iny);
+                    this.swap_gate_output(a,b);
+                    if (this.run_and_compute_output() == expected)
+                    {
+                        Swap swap;
+                        swap.a = gate;
+                        swap.b = wrong_gates_queue[i];
+                        if (!wrong_gates.contains(swap))
+                        {
+                            wrong_gates.push(swap);
+                        }
+                    }
+                    this.swap_gate_output(b,a);
+                }
+            }
+
+            io::printfn("With bit %d : expected %d but got %d", offset, expected, out);
+        }
+
+        inx = ((ulong)1 << offset);
+        iny = inx;
+        expected = inx + iny;
+
+        this.set_inputs(inx, iny);
+        out = this.run_and_compute_output();
+
+        if (expected == out)
+        {
+            uint[3] affected_gates = this.check_gates_carry(offset, &carry);
+
+            for(int i = (int)wrong_gates_queue.len() - 1; i>=0; i--)
+            {
+                if (wrong_gates_queue[i] == affected_gates[0] ||
+                    wrong_gates_queue[i] == affected_gates[1] ||
+                    wrong_gates_queue[i] == affected_gates[2])
+                {
+                    wrong_gates_queue.remove_at(i);
+                }
+            }
+
+            io::printn(wrong_gates_queue.len());
+        }
+        else
+        {
+
+            uint[3] affected_gates = this.check_gates_carry(offset, &carry);
+            foreach(gate : affected_gates)
+            {
+                String a = this.gates[gate].wire;
+                for(int i = (int)wrong_gates_queue.len() - 1; i>=0; i--)
+                {
+                    String b = this.gates[wrong_gates_queue[i]].wire;
+                    this.set_inputs(inx, iny);
+                    this.swap_gate_output(a,b);
+                    if (this.run_and_compute_output() == expected)
+                    {
+                        Swap swap;
+                        swap.a = gate;
+                        swap.b = wrong_gates_queue[i];
+                        if (!wrong_gates.contains(swap))
+                        {
+                            wrong_gates.push(swap);
+                        }
+                    }
+                    this.swap_gate_output(b,a);
+                }
+            }
+
+        }
 
         offset++;
     }
 
-    // THE REST WAS DONE MANUALLY BY CHEKING THE CIRCUIT AROUND THE WRONG OUTPUTS FOR EACH BIT
-    // I'LL TRY TO GET SOMETHING AUTOMATED IF IT IS POSSIBLE BUT IT SEEMS HARD
-    // SOLUTION FOUND : cpm,ghp,gpr,krs,nks,z10,z21,z33
+    // first try to reduce the complexity of the problem by swaping the output with others
+    // and see if it fixes the issue
 
+    foreach(i : wrong_gates_queue)
+    {
+        io::printn(this.gates[i]);
+    }
+    io::printfn("----------------------------------");
+    io::printfn("Pair %d", wrong_gates.len());
+    foreach(wrong_gate : wrong_gates)
+    {
+        io::printn(wrong_gate);
+    }
+
+    List(<Swap>) pairs = wrong_gates;
+
+    uint count = 0;
+    List(<Swap[4]>) solutions;
+    for(int i = 0; i < pairs.len(); i++)
+    {
+        io::printfn("Step %d of %d", i+1, pairs.len());
+        Swap p1 = pairs[i];
+        String p1a = this.gates[p1.a].wire;
+        String p1b = this.gates[p1.b].wire;
+        this.swap_gate_output(p1a, p1b);
+        for (int j = i+1; j < pairs.len(); j++)
+        {
+            Swap p2 = pairs[j];
+            String p2a = this.gates[p2.a].wire;
+            String p2b = this.gates[p2.b].wire;
+            if (p1.a == p2.a || p1.a == p2.b || p1.b == p2.a || p1.b == p2.b)
+            {
+                continue;
+            }
+
+            this.swap_gate_output(p2a, p2b);
+            for (int k = j+1; k < pairs.len(); k++)
+            {
+                Swap p3 = pairs[k];
+                String p3a = this.gates[p3.a].wire;
+                String p3b = this.gates[p3.b].wire;
+                if (p1.a == p3.a || p1.a == p3.b || p1.b == p3.a || p1.b == p3.b ||
+                    p2.a == p3.a || p2.a == p3.b || p2.b == p3.a || p2.b == p3.b)
+                {
+                    continue;
+                }
+
+                this.swap_gate_output(p3a, p3b);
+                for (int l = k+1; l < pairs.len(); l++)
+                {
+                    Swap p4 = pairs[l];
+                    String p4a = this.gates[p4.a].wire;
+                    String p4b = this.gates[p4.b].wire;
+                    if (p1.a == p4.a || p1.a == p4.b || p1.b == p4.a || p1.b == p4.b ||
+                        p2.a == p4.a || p2.a == p4.b || p2.b == p4.a || p2.b == p4.b ||
+                        p3.a == p4.a || p3.a == p4.b || p3.b == p4.a || p3.b == p4.b )
+                    {
+                        continue;
+                    }
+                    this.swap_gate_output(p4a,p4b);
+
+                    uint offst = 0;
+                    bool all_good = true;
+                    while (offst < 44)
+                    {
+                        ulong inx = ((ulong)1 << offst);
+                        ulong iny = inx;
+                        ulong expected = inx + iny;
+                        this.set_inputs(inx, iny);
+
+                        if(this.run_and_compute_output() != expected)
+                        {
+                            all_good = false;
+                            break;
+                        }
+
+                        offst++;
+                    }
+
+                    if (all_good)
+                    {
+                        count++;
+                        Swap[4] sol = {p1, p2, p3, p4};
+                        solutions.push(sol);
+                        //io::printfn("%s %s --- %s %s --- %s %s --- %s %s", p1a, p1b, p2a, p2b, p3a, p3b, p4a, p4b);
+                    }
+
+                    this.swap_gate_output(p4b,p4a);
+                }
+                this.swap_gate_output(p3b,p3a);
+            }
+            this.swap_gate_output(p2a, p2b);
+        }
+        this.swap_gate_output(p1a, p1b);
+    }
+
+    io::printfn("AT THIS POINT I HAVE %d solutions", count);
+
+    for(int i = (int) solutions.len()-1; i >= 0; i--)
+    {
+        Swap[4] sol = solutions[i];
+        String a = this.gates[sol[0].a].wire;
+        String b = this.gates[sol[0].b].wire;
+        String c = this.gates[sol[1].a].wire;
+        String d = this.gates[sol[1].b].wire;
+        String e = this.gates[sol[2].a].wire;
+        String f = this.gates[sol[2].b].wire;
+        String g = this.gates[sol[3].a].wire;
+        String h = this.gates[sol[3].b].wire;
+        this.swap_gate_output(a, b);
+        this.swap_gate_output(c, d);
+        this.swap_gate_output(e, f);
+        this.swap_gate_output(g, h);
+
+        uint offst = 0;
+        bool all_good = true;
+        while (offst < 44)
+        {
+            ulong inx = ((ulong)1 << offst);
+            ulong iny = 0;
+            ulong expected = inx + iny;
+            this.set_inputs(inx, iny);
+
+            if(this.run_and_compute_output() != expected)
+            {
+                all_good = false;
+                break;
+            }
+
+            offst++;
+        }
+
+        if (!all_good)
+        {
+            io::printfn("ELIMINATED BAD");
+            solutions.remove_at(i);
+        } 
+
+        this.swap_gate_output(a, b);
+        this.swap_gate_output(c, d);
+        this.swap_gate_output(e, f);
+        this.swap_gate_output(g, h);
+    }
+
+    io::printfn("AT THIS POINT I HAVE %d solutions", solutions.len());
+    foreach(sol : solutions)
+    {
+        String a = this.gates[sol[0].a].wire;
+        String b = this.gates[sol[0].b].wire;
+        String c = this.gates[sol[1].a].wire;
+        String d = this.gates[sol[1].b].wire;
+        String e = this.gates[sol[2].a].wire;
+        String f = this.gates[sol[2].b].wire;
+        String g = this.gates[sol[3].a].wire;
+        String h = this.gates[sol[3].b].wire;
+        io::printfn("%s %s --- %s %s --- %s %s --- %s %s", a, b, c, d, e, f, g, h);
+    }
+
+
+    SimpleRandom rand;
+    while(true)
+    {
+        ulong inx = (rand.next_long() << 20) >> 20;
+        ulong iny = (rand.next_long() << 20) >> 20;
+        ulong expected = inx + iny;
+
+        for BIG: (int i = (int) solutions.len()-1; i >= 0; i--)
+        {
+            Swap[4] sol = solutions[i];
+            String a = this.gates[sol[0].a].wire;
+            String b = this.gates[sol[0].b].wire;
+            String c = this.gates[sol[1].a].wire;
+            String d = this.gates[sol[1].b].wire;
+            String e = this.gates[sol[2].a].wire;
+            String f = this.gates[sol[2].b].wire;
+            String g = this.gates[sol[3].a].wire;
+            String h = this.gates[sol[3].b].wire;
+            this.swap_gate_output(a, b);
+            this.swap_gate_output(c, d);
+            this.swap_gate_output(e, f);
+            this.swap_gate_output(g, h);
+
+            this.set_inputs(inx, iny);
+            ulong result = this.run_and_compute_output();
+
+            this.swap_gate_output(g, h);
+            this.swap_gate_output(e, f);
+            this.swap_gate_output(c, d);
+            this.swap_gate_output(a, b);
+
+            if(result != expected)
+            {
+                io::printfn("ELIMINATED by random value");
+                solutions.remove_at(i);
+            }
+        }
+
+        if (solutions.len() == 1)
+        {
+            break;
+        }  
+    }
+
+    io::printfn("AT THIS POINT I HAVE %d solutions", solutions.len());
+
+    assert(solutions.len() == 1);
+    String a = this.gates[solutions[0][0].a].wire;
+    String b = this.gates[solutions[0][0].b].wire;
+    String c = this.gates[solutions[0][1].a].wire;
+    String d = this.gates[solutions[0][1].b].wire;
+    String e = this.gates[solutions[0][2].a].wire;
+    String f = this.gates[solutions[0][2].b].wire;
+    String g = this.gates[solutions[0][3].a].wire;
+    String h = this.gates[solutions[0][3].b].wire;
+
+    String[8] result = {a, b, c, d, e, f, g, h};
+
+    String[8] res = sort_output(result);
+
+    foreach(iii, r : res)
+    {
+        if (iii != 0)
+        {
+            io::print(",");
+        }
+
+        io::print(r);
+    }
+
+    io::prinfn("");
 }
 
 fn void process(String data, bool is_part_b)
