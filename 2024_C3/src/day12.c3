@@ -247,8 +247,10 @@ fn ulong compute_result(String[] grid, int row, int col, bool is_part_b)
     return area * sides;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data_in, bool is_part_b, bool dummy)
 {
+    String data = data_in.copy();
+
     String[] grid = data.split("\r\n");
 	defer free(grid);
 

@@ -87,7 +87,7 @@ fn long compute_sold_count_total(List(<ValueChangeList>)* all_prices, long[4]* s
     return sold_count;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] list = data.split("\r\n");
 	defer free(list);
@@ -120,7 +120,10 @@ fn void process(String data, bool is_part_b)
         List(<ulong>) checked;
         foreach (i, prices : &all_prices)
         {
-            io::printfn("Current step %d of %d", i+1, all_prices.len());
+            if(verbose)
+            {
+                io::printfn("Current step %d of %d", i+1, all_prices.len());
+            }
 
             for(long j = 0; j < (prices.len()-3); j++)
             {
@@ -136,7 +139,7 @@ fn void process(String data, bool is_part_b)
                     continue;
                 }
 
-                if (checked.len() % 100 == 0)
+                if (verbose && checked.len() % 100 == 0)
                 {
                     io::printfn("Checked items count %d", checked.len());
                 }
@@ -146,7 +149,11 @@ fn void process(String data, bool is_part_b)
                 long value = compute_sold_count_total(&all_prices, &sequence, i);     
                 if (value > total)
                 {
-                    io::printfn("New best value %d", value);
+                    if (verbose)
+                    {
+                        io::printfn("New best value %d", value);
+                    }
+
                     total = value;
                 }
             }

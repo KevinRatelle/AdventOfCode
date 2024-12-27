@@ -118,7 +118,7 @@ fn void defragment_preserve_file(List(<int>) mem)
     }
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     List(<int>) mem = fill_memory(data);
     defer mem.free();

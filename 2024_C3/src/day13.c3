@@ -108,7 +108,7 @@ fn ulong cheapest_path(Machine machine)
     return button_b_press_count + button_a_press_count*3;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -136,7 +136,11 @@ fn void process(String data, bool is_part_b)
     {
         Machine machine = machines[i];
         ulong path_cost = cheapest_path(machine);
-        io::printfn("Path %d (of %d) costs %d", i, machines.len(), path_cost);
+
+        if (verbose)
+        {
+            io::printfn("Path %d (of %d) costs %d", i, machines.len(), path_cost);
+        }
 
         total += path_cost;
     }

@@ -120,7 +120,7 @@ fn void print(String[] grid)
     }
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);
@@ -140,7 +140,11 @@ fn void process(String data, bool is_part_b)
     }
 
     compute_antinodes(grid, antinodes_grid.to_tarray(), is_part_b);
-    print(antinodes_grid.to_tarray());
+
+    if (verbose)
+    {
+        print(antinodes_grid.to_tarray());
+    }
 
     uint total = count_antinodes(antinodes_grid.to_tarray());
     io::printfn("Total is %d", total);

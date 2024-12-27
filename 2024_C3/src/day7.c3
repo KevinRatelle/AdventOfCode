@@ -61,7 +61,7 @@ fn bool solve(List(<ulong>) values, ulong total, ulong current_total, uint index
     return add || mult || concat;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -71,7 +71,10 @@ fn void process(String data, bool is_part_b)
 
     foreach(String line : lines)
     {
-        io::printfn("Step %d / %d", i++, lines.len);
+        if (verbose)
+        {
+            io::printfn("Step %d / %d", i++, lines.len);
+        }
 
         String[] equation = line.split(": ");
         defer free(equation);

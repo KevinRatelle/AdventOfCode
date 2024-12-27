@@ -179,7 +179,7 @@ fn void print_grid(String[] map)
     io::printn("                     ");
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] map = data.split("\r\n");
 	defer free(map);
@@ -204,8 +204,11 @@ fn void process(String data, bool is_part_b)
     if (is_part_b)
     {
         for(int i = 0; i < map.len; i++)
-        {         
-            io::printfn("Step %d or %d", i, map.len);
+        {
+            if (verbose)
+            {
+                io::printfn("   - step %d of %d", i+1, map.len);
+            }
 
             for(int j = 0; j < map[0].len; j++)
             {
@@ -233,6 +236,8 @@ fn void process(String data, bool is_part_b)
         guard_walk(map, cursor);
         count = count_walked(map);
     }
+
+    map[cursor.y][cursor.x] = '^';
 
     io::printfn("Total is %d", count);
 }

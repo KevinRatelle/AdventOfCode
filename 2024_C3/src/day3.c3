@@ -37,7 +37,7 @@ fn usz compute_mul(String data)
     return total;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
     usz total = 0;
 

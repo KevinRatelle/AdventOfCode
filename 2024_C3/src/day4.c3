@@ -81,7 +81,7 @@ fn void test_current_x(String[] lines, int i, int j, uint* count)
     }
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);

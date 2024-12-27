@@ -75,7 +75,7 @@ fn uint compute_score(String[] grid, Position head, bool is_part_b)
     return (uint) tails.len();
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);

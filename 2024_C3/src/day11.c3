@@ -79,7 +79,7 @@ fn ulong blink(String number, uint count, Map(<Key,ulong>)* map)
     return res;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] numbers = data.split(" ");
 	defer free(numbers);
@@ -89,7 +89,11 @@ fn void process(String data, bool is_part_b)
     ulong total = 0;
     for(int i = 0; i < numbers.len; i++)
     {
-        io::printfn("Step %d of %d", i+1, numbers.len);
+        if (verbose)
+        {
+            io::printfn("Step %d of %d", i+1, numbers.len);
+        }
+
         total += blink(numbers[i], is_part_b ? 75 : 25, &result_map);
     }
 

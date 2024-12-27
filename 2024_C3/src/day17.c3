@@ -296,7 +296,7 @@ fn Computer load_state(String[] lines)
     return computer;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -311,7 +311,19 @@ fn void process(String data, bool is_part_b)
             computer.tick();
         }
 
-        io::printfn("Output is %s", computer.m_output);
+        List(<char>) output;
+        foreach(i, out : computer.m_output)
+        {
+            if (i != 0)
+            {
+                output.push(',');
+            }
+            
+            char c = (char) out + '0';
+            output.push(c);
+        }
+
+        io::printfn("Output is %s", (String) output.to_tarray());
     }
     else
     {
@@ -331,7 +343,11 @@ fn void process(String data, bool is_part_b)
                 computer.tick();
             }
 
-            io::printfn("Output is %s", computer.m_output);
+            if (verbose)
+            {
+                io::printfn("Output is %s", computer.m_output);
+            }
+
             if (digit_index == 0 && computer.is_identical())
             {
                 break;

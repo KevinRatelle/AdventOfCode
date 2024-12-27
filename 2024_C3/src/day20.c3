@@ -241,7 +241,7 @@ fn List(<Vector2>) cheapest_path(String[] grid)
     return construct_path(closed_list);
 } 
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);

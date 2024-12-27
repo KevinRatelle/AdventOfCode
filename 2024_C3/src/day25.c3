@@ -1,8 +1,14 @@
 import std::io;
 import std::collections::list;
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool dummy)
 {
+    if (is_part_b)
+    {
+        io::printfn("No puzzle ! Congrats !");
+        return;
+    }
+
     String[] groups = data.split("\r\n\r\n");
     defer free(groups);
 

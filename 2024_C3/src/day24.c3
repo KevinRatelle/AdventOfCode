@@ -399,7 +399,7 @@ fn String[8] sort_output(String[8] in)
     return sorted;
 }
 
-fn void Circuit.find_issues(Circuit* this)
+fn void Circuit.find_issues(Circuit* this, bool verbose)
 {
     // From inspection of the data :
     // Adder of 44 bit integers, with a carry bit out, but not in, so it contains:
@@ -422,7 +422,11 @@ fn void Circuit.find_issues(Circuit* this)
     String carry;
     List(<Swap>) wrong_gates;
 
-    io::printfn("Step 1 : Finding gate pairs that can be wrong.");
+    if (verbose)
+    {
+        io::printfn("Step 1 : Finding gate pairs that can be wrong.");
+    }
+
     while (offset < 44)
     {
         ulong inx = ((ulong)1 << offset);
@@ -434,8 +438,7 @@ fn void Circuit.find_issues(Circuit* this)
 
         if (offset == 0)
         {
-            // TODO : this is ugly and should be split too between checking SUM and CARRY
-            // trigger if half-adder is wrong, the logic would need to change
+            // assume the only half-adder is right
             assert(out == expected);
             
             String x = "x00";
@@ -545,7 +548,10 @@ fn void Circuit.find_issues(Circuit* this)
                 }
             }
 
-            io::printfn("   - Wrong bit found %d.", offset);
+            if (verbose)
+            {
+                io::printfn("   - Wrong bit found %d.", offset);
+            }
         }
 
         inx = ((ulong)1 << offset);
@@ -603,17 +609,22 @@ fn void Circuit.find_issues(Circuit* this)
     // first try to reduce the complexity of the problem by swaping the output with others
     // and see if it fixes the issue
 
-
-    io::printfn("Left witfh %d pairs of gates to check", wrong_gates.len());
+    if (verbose)
+    {
+        io::printfn("Left witfh %d pairs of gates to check", wrong_gates.len());
+        io::printfn("Step 2 : Generate potential solutions containing 4 swaps.");
+    }
 
     List(<Swap>) pairs = wrong_gates;
-
-    io::printfn("Step 2 : Generate potential solutions containing 4 swaps.");
 
     List(<Swap[4]>) solutions;
     for(int i = 0; i < pairs.len(); i++)
     {
-        io::printfn("   - %d of %d", i+1, pairs.len());
+        if (verbose)
+        {
+            io::printfn("   - %d of %d", i+1, pairs.len());
+        }
+
         Swap p1 = pairs[i];
         String p1a = this.gates[p1.a].wire;
         String p1b = this.gates[p1.b].wire;
@@ -676,7 +687,6 @@ fn void Circuit.find_issues(Circuit* this)
                     {
                         Swap[4] sol = {p1, p2, p3, p4};
                         solutions.push(sol);
-                        //io::printfn("%s %s --- %s %s --- %s %s --- %s %s", p1a, p1b, p2a, p2b, p3a, p3b, p4a, p4b);
                     }
 
                     this.swap_gate_output(p4b,p4a);
@@ -688,9 +698,11 @@ fn void Circuit.find_issues(Circuit* this)
         this.swap_gate_output(p1a, p1b);
     }
 
-    io::printfn("Left with potential %d solutions.", solutions.len());
-
-    io::printfn("Step 3 : Going through all solutions and testinf or simple inputs.");
+    if (verbose)
+    {
+        io::printfn("Left with potential %d solutions.", solutions.len());
+        io::printfn("Step 3 : Going through all solutions and testinf or simple inputs.");
+    }
 
     uint eliminated = 0;
     for(int i = (int) solutions.len()-1; i >= 0; i--)
@@ -729,7 +741,11 @@ fn void Circuit.find_issues(Circuit* this)
 
         if (!all_good)
         {
-            io::printfn("   - Bad solution eliminated %d", ++eliminated);
+            if (verbose)
+            {
+                io::printfn("   - Bad solution eliminated %d", ++eliminated);
+            }
+
             solutions.remove_at(i);
         } 
 
@@ -739,9 +755,12 @@ fn void Circuit.find_issues(Circuit* this)
         this.swap_gate_output(g, h);
     }
 
-    io::printfn("Left with potential %d solutions.", solutions.len());
+    if (verbose)
+    {
+        io::printfn("Left with potential %d solutions.", solutions.len());
+        io::printfn("Step 4 : Using random inputs to force the wrong solutions left out.");
+    }
 
-    io::printfn("Step 4 : Using random inputs to force the wrong solutions left out.");
     SimpleRandom rand;
     uint random_count = 0;
     while(++random_count)
@@ -776,7 +795,11 @@ fn void Circuit.find_issues(Circuit* this)
 
             if(result != expected)
             {
-                io::printfn("   - Bad solution eliminated.");
+                if (verbose)
+                {
+                    io::printfn("   - Bad solution eliminated.");
+                }
+
                 solutions.remove_at(i);
             }
         }
@@ -800,9 +823,12 @@ fn void Circuit.find_issues(Circuit* this)
     String[8] result = {a, b, c, d, e, f, g, h};
     String[8] res = sort_output(result);
 
-    io::printfn("Step 5 : sorting the result.");
+    if (verbose)
+    {
+        io::printfn("Step 5 : sorting the result.");
+    }
 
-    io::printf("RESULT : ");
+    io::printf("Result is : ");
     foreach(iii, r : res)
     {
         if (iii != 0)
@@ -816,7 +842,7 @@ fn void Circuit.find_issues(Circuit* this)
     io::printn("");
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -885,6 +911,6 @@ fn void process(String data, bool is_part_b)
     }
     else
     {
-        circuit.find_issues();
+        circuit.find_issues(verbose);
     }
 }

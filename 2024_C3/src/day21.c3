@@ -368,7 +368,7 @@ fn ulong compute_cost_chain(String chain, Map(<ulong, ulong>)* cached, char laye
     return cost;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -376,7 +376,6 @@ fn void process(String data, bool is_part_b)
     ulong total = 0;
     foreach(String line : lines)
     {
-        io::printfn("Doing step %s", line);
         if (line == "")
         {
             break;
@@ -385,9 +384,14 @@ fn void process(String data, bool is_part_b)
         ulong value = to_value(line);
 
         Map(<ulong, ulong>) cached_cost;
-        ulong shortest = compute_cost_chain(line, &cached_cost, 25, true);
+        char layer_count = is_part_b ? 25 : 2;
+        ulong shortest = compute_cost_chain(line, &cached_cost, layer_count, true);
 
-        io::printfn("Current step %s %s", shortest, value);
+        if (verbose)
+        {
+            io::printfn("Current step : shortest = %s  value = %s", shortest, value);
+        }
+
         total+=shortest*value;
     }
 

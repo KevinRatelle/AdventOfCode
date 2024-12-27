@@ -233,8 +233,10 @@ fn ulong compute_gps(List(<String>)* map)
     return gps;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data_in, bool is_part_b, bool verbose)
 {
+    String data = data_in.copy();
+
     String[] lines = data.split("\r\n");
 	defer free(lines);
 
@@ -288,13 +290,16 @@ fn void process(String data, bool is_part_b)
         {
             foreach(char command : line)
             {
-                //print_grid(&map);
                 execute_command(&map, command);
             }
         }
     }
 
-    print_grid(&map);
+    if (verbose)
+    {
+        print_grid(&map);
+    }
+
     ulong total = compute_gps(&map);
     io::printfn("Total is %d", total);
 }

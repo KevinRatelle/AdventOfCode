@@ -167,7 +167,7 @@ fn uint tree_heuristic(List(<Robot>)* robots)
     return heuristic;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -184,7 +184,11 @@ fn void process(String data, bool is_part_b)
         {
             Robot robot = read_robot(line);
             move_robot(&robot, 100, grid);
-            io::printfn("Robot : pos %d %d vel %d %d", robot.pos.x, robot.pos.y, robot.vel.x, robot.vel.y);
+
+            if (verbose)
+            {
+                io::printfn("Robot : pos %d %d vel %d %d", robot.pos.x, robot.pos.y, robot.vel.x, robot.vel.y);
+            }
 
             int quadrant_index = compute_quadrant(robot, grid);
             if (quadrant_index != -1)
@@ -198,7 +202,6 @@ fn void process(String data, bool is_part_b)
     }
     else
     {
-
         List(<String>) image;
         defer image.free();
 
@@ -221,12 +224,11 @@ fn void process(String data, bool is_part_b)
         }
 
         uint frame = 0;
+        uint best_frame = 0;
         uint tree_probability = 0;
-        while (true)
+        while (++frame < 20000)
         {
-            frame++;
-
-            if (frame % 1000 == 0)
+            if (verbose && frame % 1000 == 0)
             {
                 io::printfn("Second = %d", frame);
             }
@@ -239,11 +241,17 @@ fn void process(String data, bool is_part_b)
             uint current_tree_probability = tree_heuristic(&robots);
             if (current_tree_probability > tree_probability)
             {
-                io::printfn("Second = %d", frame);
-                set_grid(&image, &robots);
-                print_grid(&image);
+                if (verbose)
+                {
+                    io::printfn("Second = %d", frame);
+                    set_grid(&image, &robots);
+                    print_grid(&image);
+                }
                 tree_probability = current_tree_probability;
+                best_frame = frame;
             }
         }
+
+        io::printfn("Best frame is %d", best_frame);
     }
 }

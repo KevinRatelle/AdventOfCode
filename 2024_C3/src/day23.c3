@@ -134,13 +134,13 @@ fn void compute_biglan(BigLan* biglan, List(<Connection>)* connections, List(<St
     }
 }
 
-fn BigLan find_big_lan(List(<Lan>)* lans, List(<Connection>)* connections, List(<String>)* computers)
+fn BigLan find_big_lan(List(<Lan>)* lans, List(<Connection>)* connections, List(<String>)* computers, bool verbose)
 {
     BigLan out;
 
     for(int i = 0; i < lans.len(); i++)
     {
-        if (i % 100 == 0)
+        if (verbose && i % 100 == 0)
         {
             io::printfn("Testing lan %d of %d", i, lans.len());
         }
@@ -221,7 +221,7 @@ fn String to_string(BigLan* biglan)
     return (String) list.to_tarray();
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -254,7 +254,7 @@ fn void process(String data, bool is_part_b)
 
     if (is_part_b)
     {
-        BigLan biglan = find_big_lan(&lans, &connections, &computers);
+        BigLan biglan = find_big_lan(&lans, &connections, &computers, verbose);
         biglan = sort_big_lan(&biglan);
 
         String output = to_string(&biglan);

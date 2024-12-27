@@ -194,7 +194,7 @@ fn int cheapest_path(List(<String>)* grid)
     return best;
 } 
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     uint grid_size = 71;
     uint byte_to_read = 1024;
@@ -244,7 +244,11 @@ fn void process(String data, bool is_part_b)
 
         if (is_part_b && count > byte_to_read)
         {
-            io::printfn("Testing byte %d", count);
+            if (verbose)
+            {
+                io::printfn("Testing byte %d", count);
+            }
+
             int cost = cheapest_path(&grid);
             if (cost == -1)
             {

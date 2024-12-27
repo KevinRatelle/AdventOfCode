@@ -70,7 +70,7 @@ fn ulong pattern_count(String pattern, List(<String>)* dictionary, List(<StringW
     return count;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] lines = data.split("\r\n");
 	defer free(lines);
@@ -84,7 +84,11 @@ fn void process(String data, bool is_part_b)
     ulong possible_count = 0;
     for(int i = 2; i<lines.len; i++)
     {
-        io::printfn("Current step %d", i-1);
+        if (verbose)
+        {
+            io::printfn("Current step %d", i-1);
+        }
+
         String pattern = lines[i];
 
         ulong count = pattern_count(pattern, &dictionary, &precomputed);
@@ -97,8 +101,6 @@ fn void process(String data, bool is_part_b)
             possible_count += count > 0 ? 1 : 0;
         }
     }
-
-    
 
     io::printfn("Possible count = %d", possible_count);
 }

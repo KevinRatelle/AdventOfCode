@@ -139,7 +139,7 @@ fn void update_open_list(List(<DeerCost>)* open_list, DeerCost item, DeerCost go
     }
 }
 
-fn uint cheapest_path(String[] grid, bool is_part_b)
+fn uint cheapest_path(String[] grid, bool is_part_b, bool verbose)
 {
     DeerCost goal;
     goal.deer.pos = get_pos(grid, 'E');
@@ -176,7 +176,11 @@ fn uint cheapest_path(String[] grid, bool is_part_b)
         if (heuristic(current, goal) < best)
         {
             best = heuristic(current, goal);
-            io::printfn("Current best : %d", best);
+
+            if (verbose)
+            {
+                io::printfn("Current best : %d", best);
+            }
         }
 
         closed_list.push(current);
@@ -277,7 +281,6 @@ fn uint cheapest_path(String[] grid, bool is_part_b)
                     if (deer_cost.deer.equals(current.deer) && i != from_index && deer_cost.cost.g == current.cost.g)
                     {
                         chains.push(i);
-                        io::printn(closed_list[i]);
                     }
                 }
             }
@@ -289,11 +292,11 @@ fn uint cheapest_path(String[] grid, bool is_part_b)
     return best;
 }
 
-fn void process(String data, bool is_part_b)
+fn void process(String data, bool is_part_b, bool verbose)
 {
     String[] grid = data.split("\r\n");
 	defer free(grid);
 
-    uint cost = cheapest_path(grid, is_part_b);
+    uint cost = cheapest_path(grid, is_part_b, verbose);
     io::printfn("Total is %d", cost);
 }
