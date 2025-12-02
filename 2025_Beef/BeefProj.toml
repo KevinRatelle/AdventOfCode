@@ -1,0 +1,5 @@
+FileVersion = 1
+
+[Project]
+Name = "2025_Beef"
+StartupObject = "_2025_Beef.Program"
