@@ -11,36 +11,66 @@ public class Day2
 		public uint64 m_end;
 	}
 
-	static bool IsInvalid(uint64 value)
+	static bool IsInvalid(String str, int groupCount)
 	{
-		String str = scope String();
-		value.ToString(str);
-
 		int len = str.Length;
-		if (len % 2 != 0)
+		if (len % groupCount != 0)
 		{
 			return false;
 		}
 
-		int half = len / 2;
+		int offset = len / groupCount;
 
-		for (int i = 0; i < half; i++)
+		for (int i = 0; i < offset; i++)
 		{
-			if (str[i] != str[i + half])
+			for (int o = 0; o < groupCount; o++)
 			{
-				return false;
+				int off = o * offset;
+				if (str[i] != str[i + off])
+				{
+					return false;
+				}
 			}
 		}
 
 		return true;
 	}
 
-	static uint64 SumInvalid(Range range)
+
+	static bool IsInvalid(String str)
+	{
+		int len = str.Length;
+
+		for (int groupCount = 2; groupCount <= len; groupCount++)
+		{
+			if (IsInvalid(str, groupCount))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static bool IsInvalid(uint64 value, bool isPartB)
+	{
+		String str = scope String();
+		value.ToString(str);
+
+		if (isPartB)
+		{
+			return IsInvalid(str);
+		}
+
+		return IsInvalid(str, 2);
+	}
+
+	static uint64 SumInvalid(Range range, bool isPartB)
 	{
 		uint64 sum = 0u;
 		for (uint64 i = range.m_begin; i <= range.m_end; i++)
 		{
-			if (IsInvalid(i))
+			if (IsInvalid(i, isPartB))
 			{
 				sum += i;
 			}
@@ -113,10 +143,7 @@ public class Day2
 			for (let elem in line.Split(','))
 			{
 				Range range = ExtractRange(elem);
-				Console.Write(range.m_begin);
-				Console.Write("-");
-				Console.WriteLine(range.m_end);
-				sum += SumInvalid(range);
+				sum += SumInvalid(range, isPartB);
 			}
 		}
 
