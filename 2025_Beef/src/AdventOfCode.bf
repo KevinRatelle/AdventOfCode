@@ -24,13 +24,13 @@ class Program
 
 	static void Main()
 	{
-		var fileName = scope String("day2.txt");
+		var fileName = scope String("day3.txt");
 
 		var outValues = scope List<String>();
 		Parse(fileName, outValues);
 
 		bool isB = true;
-		Day2.Execute(outValues, isB);
+		Day3.Execute(outValues, isB);
 
 		// wait for input and close
 		Console.Read();
