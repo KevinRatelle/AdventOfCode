@@ -10,25 +10,38 @@ class Day3
 		return (uint8)(c - '0');
 	}
 
-	static uint32 ComputeBankJolt(StringView str)
+	static uint64 Pow(uint64 value, uint8 power)
 	{
-		uint8 maxValue = 0;
-
-		for (int i = 0; i < (str.Length - 1); i++)
+		if (power == 0)
 		{
-			uint8 digit1 = ToDigit(str[i]);
+			return 1;
+		}
 
-			for (int j = i + 1; j < str.Length; j++)
+		return value * Pow(value, power - 1);
+	}
+
+	static uint64 ComputeBankJolt(StringView str, uint8 digitCount)
+	{
+		uint64 maxValue = 0;
+
+		uint8 minIndex = 0u;
+		uint8 digitRemaining = digitCount;
+		while (digitRemaining > 0)
+		{
+			uint8 digitMax = 0u;
+			for (uint8 i = minIndex; i < (str.Length - digitRemaining + 1); i++)
 			{
-				uint8 digit2 = ToDigit(str[j]);
-
-				uint8 value = digit1 * 10 + digit2;
-				if (value > maxValue)
+				uint8 digit = ToDigit(str[i]);
+				if (digit > digitMax)
 				{
-					maxValue = value;
+					digitMax = digit;
+					minIndex = i + 1; // first encounter of the max
 				}
 			}
+
+			maxValue += digitMax * Pow(10, --digitRemaining);
 		}
+
 
 		return maxValue;
 	}
@@ -39,7 +52,7 @@ class Day3
 
 		for (var line in values)
 		{
-			sum += ComputeBankJolt(line);
+			sum += ComputeBankJolt(line, isPartB ? 12 : 2);
 		}
 
 		Console.WriteLine("Sum is {}", sum);
