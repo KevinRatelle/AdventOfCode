@@ -29,7 +29,7 @@ class Program
 		var outValues = scope List<String>();
 		Parse(fileName, outValues);
 
-		bool isB = false;
+		bool isB = true;
 		Day4.Execute(outValues, isB);
 
 		// wait for input and close

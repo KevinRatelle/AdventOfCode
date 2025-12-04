@@ -5,18 +5,18 @@ using System.Collections;
 
 class Day4
 {
-	static public bool IsObject(List<bool> grid, int32 row, int32 col, int32 rowCount, int32 columnCount)
+	static public bool IsObject(List<char8> grid, int32 row, int32 col, int32 rowCount, int32 columnCount)
 	{
 		if (row < 0 || col < 0 || row >= rowCount || col >= columnCount)
 		{
 			return false;
 		}
 
-
-		return grid[row * columnCount + col];
+		char8 c = grid[row * columnCount + col];
+		return c == '@' || c == 'x';
 	}
 
-	static public bool IsMovable(List<bool> grid, int32 row, int32 col, int32 rowCount, int32 columnCount)
+	static public bool IsMovable(List<char8> grid, int32 row, int32 col, int32 rowCount, int32 columnCount)
 	{
 		uint32 neighborCount = 0u;
 
@@ -39,10 +39,8 @@ class Day4
 		return neighborCount < 4;
 	}
 
-	static public uint32 CountMovableCells(List<bool> grid, int32 rowCount, int32 columnCount)
+	static public void FlagMovableCells(List<char8> grid, int32 rowCount, int32 columnCount)
 	{
-		uint32 count = 0u;
-
 		for (int32 row = 0u; row < rowCount; row++)
 		{
 			for (int32 col = 0u; col < columnCount; col++)
@@ -54,6 +52,22 @@ class Day4
 
 				if (IsMovable(grid, row, col, rowCount, columnCount))
 				{
+					grid[row * columnCount + col] = 'x';
+				}
+			}
+		}
+	}
+
+	static public uint32 RemoveMovableCells(List<char8> grid, int32 rowCount, int32 columnCount)
+	{
+		uint32 count = 0u;
+		for (int32 row = 0u; row < rowCount; row++)
+		{
+			for (int32 col = 0u; col < columnCount; col++)
+			{
+				if (grid[row * columnCount + col] == 'x')
+				{
+					grid[row * columnCount + col] = '.';
 					count++;
 				}
 			}
@@ -64,7 +78,7 @@ class Day4
 
 	static public void Execute(List<String> values, bool isPartB)
 	{
-		List<bool> grid = scope List<bool>();
+		List<char8> grid = scope List<char8>();
 		int32 columnCount = 0u;
 		int32 rowCount = 0u;
 
@@ -80,13 +94,9 @@ class Day4
 			for (int i = 0; i < line.Length; i++)
 			{
 				char8 c = line[i];
-				if (c == '@')
+				if (c == '@' || c == '.')
 				{
-					grid.Add(true);
-				}
-				else if (c == '.')
-				{
-					grid.Add(false);
+					grid.Add(c);
 				}
 				else
 				{
@@ -95,7 +105,21 @@ class Day4
 			}
 		}
 
-		uint32 count = CountMovableCells(grid, rowCount, columnCount);
+		uint32 count = 0u;
+
+		uint32 removedCount = 1;
+		while (removedCount > 0)
+		{
+			FlagMovableCells(grid, rowCount, columnCount);
+			removedCount = RemoveMovableCells(grid, rowCount, columnCount);
+
+			count += removedCount;
+
+			if (!isPartB)
+			{
+				break;
+			}
+		}
 
 		Console.WriteLine("Count is {}", count);
 	}
