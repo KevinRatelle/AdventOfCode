@@ -9,6 +9,16 @@ class Day5
 	{
 		public int64 m_begin;
 		public int64 m_end;
+
+		public int64 Length()
+		{
+			return m_end - m_begin + 1;
+		}
+
+		public bool Overlap(Range range)
+		{
+			return m_begin <= range.m_end && m_end >= range.m_begin;
+		}
 	}
 
 	static int64 ExtractValue(StringView value)
@@ -99,6 +109,82 @@ class Day5
 		return count;
 	}
 
+	static int32 Overlap(Range rangeIn, List<Range> ranges, int32 startIndex)
+	{
+		for (int32 i = startIndex; i < ranges.Count; i++)
+		{
+			Range range = ranges[i];
+			if (range.Overlap(rangeIn))
+			{
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	static void CutOverlaps(ref List<Range> ranges)
+	{
+		for (int32 i = 0; i < ranges.Count; i++)
+		{
+			Range range = ranges[i];
+
+			int32 index = 1;
+			while (index != -1)
+			{
+				index = Overlap(range, ranges, i + 1);
+
+				if (index != -1)
+				{
+					Range otherRange = ranges[index];
+
+					// 4 scenarios
+
+					// completely in the other range : remove range
+					if (range.m_end <= otherRange.m_end && range.m_begin >= otherRange.m_begin)
+					{
+						range.m_begin = 0;
+						range.m_end = -1;
+					}
+					// contains the other completely : split range
+					else if (range.m_end >= otherRange.m_end && range.m_begin <= otherRange.m_begin)
+					{
+						Range newRange;
+						newRange.m_begin = otherRange.m_end + 1;
+						newRange.m_end = range.m_end;
+
+						range.m_end = otherRange.m_begin - 1;
+						ranges.Add(newRange);
+					}
+					// otherwise either adjust range on left or right
+					else if (range.m_end >= otherRange.m_end)
+					{
+						range.m_begin = otherRange.m_end + 1;
+					}
+					else
+					{
+						range.m_end = otherRange.m_begin - 1;
+					}
+				}
+			}
+
+			ranges[i] = range;
+		}
+	}
+
+	static uint64 CountFreshRange(ref List<Range> ranges)
+	{
+		CutOverlaps(ref ranges);
+
+		int64 total = 0u;
+		for (var range in ranges)
+		{
+			total += range.Length();
+		}
+
+		return (uint64)total;
+	}
+
 	static public void Execute(List<String> lines, bool isPartB)
 	{
 		var ranges = scope List<Range>();
@@ -126,7 +212,16 @@ class Day5
 			}
 		}
 
-		uint32 count = CountFresh(values, ranges);
+		uint64 count = 0u;
+		if (isPartB)
+		{
+			count = CountFreshRange(ref ranges);
+		}
+		else
+		{
+			count = CountFresh(values, ranges);
+		}
+
 		Console.WriteLine("Count is {}", count);
 	}
 }
