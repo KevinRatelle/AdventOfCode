@@ -3,7 +3,7 @@ namespace _2025_Beef;
 using System;
 using System.Collections;
 
-class Day3
+class Day03
 {
 	static uint8 ToDigit(char8 c)
 	{

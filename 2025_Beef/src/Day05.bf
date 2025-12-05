@@ -3,7 +3,7 @@ namespace _2025_Beef;
 using System;
 using System.Collections;
 
-class Day5
+class Day05
 {
 	struct Range
 	{

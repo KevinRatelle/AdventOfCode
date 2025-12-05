@@ -3,7 +3,7 @@ namespace _2025_Beef;
 using System;
 using System.Collections;
 
-class Day4
+class Day04
 {
 	static public bool IsObject(List<char8> grid, int32 row, int32 col, int32 rowCount, int32 columnCount)
 	{

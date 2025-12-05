@@ -3,7 +3,7 @@ namespace _2025_Beef;
 using System;
 using System.Collections;
 
-public class Day1
+public class Day01
 {
 	static public void Execute(List<String> values, bool isPartB)
 	{
