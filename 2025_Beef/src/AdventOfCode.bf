@@ -32,6 +32,11 @@ class Program
 		bool isB = false;
 		Day08.Execute(outValues, isB);
 
+		for (var val in outValues)
+		{
+			delete val;
+		}
+
 		// wait for input and close
 		Console.Read();
 	}

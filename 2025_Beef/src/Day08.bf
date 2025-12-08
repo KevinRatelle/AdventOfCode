@@ -132,6 +132,24 @@ class Day08
 		}
 	}
 
+	static Connection FindLargest(List<Position> positions, ref uint32[] largest, uint32 count)
+	{
+		var connections = scope List<Connection>();
+		GenerateConnections(positions, connections, count);
+
+		GenerateCircuits((uint32)positions.Count, connections, ref largest);
+
+		if (connections.IsEmpty)
+		{
+			Connection c;
+			c.a = 0;
+			c.b = 0;
+			return c;
+		}
+
+		return connections[connections.Count - 1];
+	}
+
 	static public void Execute(List<String> lines, bool isPartB)
 	{
 		var positions = scope List<Position>();
@@ -155,14 +173,42 @@ class Day08
 			positions.Add(pos);
 		}
 
-		var connections = scope List<Connection>();
-		GenerateConnections(positions, connections, 1000);
+		if (!isPartB)
+		{
+			var largest = scope uint32[3];
+			FindLargest(positions, ref largest, 1000);
 
-		var largest = scope uint32[3];
-		GenerateCircuits((uint32)positions.Count, connections, ref largest);
+			uint32 count = largest[0] * largest[1] * largest[2];
 
-		uint32 count = largest[0] * largest[1] * largest[2];
+			Console.WriteLine("Count is {}", count);
+		}
+		else
+		{
+			uint32 cur = 0;
+			uint32 step = 1000;
+			while (true)
+			{
+				Console.Write("Current is {}", cur);
+				var largest = scope uint32[3];
+				Connection c = FindLargest(positions, ref largest, cur);
+				Console.WriteLine("  has {} items in biggest.", largest[0]);
 
-		Console.WriteLine("Count is {}", count);
+				if (largest[0] == positions.Count)
+				{
+					if (step > 1)
+					{
+						cur -= step;
+						step /= 10;
+					}
+					else
+					{
+						Console.WriteLine("Count is {}", (uint32)positions[c.a].x * (uint32)positions[c.b].x);
+						break;
+					}
+				}
+
+				cur += step;
+			}
+		}
 	}
 }
