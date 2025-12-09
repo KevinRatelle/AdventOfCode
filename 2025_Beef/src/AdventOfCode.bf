@@ -29,7 +29,7 @@ class Program
 		var outValues = scope List<String>();
 		Parse(fileName, outValues);
 
-		bool isB = false;
+		bool isB = true;
 		Day09.Execute(outValues, isB);
 
 		for (var val in outValues)
