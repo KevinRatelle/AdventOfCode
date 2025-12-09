@@ -24,13 +24,13 @@ class Program
 
 	static void Main()
 	{
-		var fileName = scope String("day08.txt");
+		var fileName = scope String("day09.txt");
 
 		var outValues = scope List<String>();
 		Parse(fileName, outValues);
 
 		bool isB = false;
-		Day08.Execute(outValues, isB);
+		Day09.Execute(outValues, isB);
 
 		for (var val in outValues)
 		{
