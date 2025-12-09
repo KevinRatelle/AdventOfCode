@@ -12,25 +12,47 @@ class Day08
 		public double z;
 	}
 
-	struct Connection
+	struct Connection : IHashable
 	{
 		public uint32 a;
 		public uint32 b;
+
+		public this
+		{
+			a = 0;
+			b = 0;
+		}
+
+		public int GetHashCode()
+		{
+			return ((int)a << 32) + b;
+		}
 	}
 
-	static double Distance(Position a, Position b)
+	static double DistanceSquared(Position a, Position b)
 	{
 		double x = a.x - b.x;
 		double y = a.y - b.y;
 		double z = a.z - b.z;
 
-		return Math.Sqrt(x * x + y * y + z * z);
+		return x * x + y * y + z * z;
 	}
 
-	static void GenerateConnections(List<Position> positions, List<Connection> connections, uint32 connectionCount)
+	static void GenerateConnections(List<Position> positions, List<Connection> connectionsOut, uint32 connectionCount)
 	{
+		// generate the X smallest connections
+
+		Console.WriteLine("Generating connections.");
+
+		var connections = scope HashSet<Connection>();
+
 		while (connections.Count < connectionCount)
 		{
+			if ((connections.Count % 500) == 0)
+			{
+				Console.WriteLine("  - Generated {} connections of {}.", connections.Count, connectionCount);
+			}
+
 			double minimum = double.MaxValue;
 			Connection min;
 			min.a = 0;
@@ -40,7 +62,7 @@ class Day08
 			{
 				for (uint32 j = i + 1; j < positions.Count; j++)
 				{
-					if (Distance(positions[i], positions[j]) < minimum)
+					if (DistanceSquared(positions[i], positions[j]) < minimum)
 					{
 						Connection c;
 						c.a = i;
@@ -48,7 +70,7 @@ class Day08
 
 						if (!connections.Contains(c))
 						{
-							minimum = Distance(positions[i], positions[j]);
+							minimum = DistanceSquared(positions[i], positions[j]);
 							min = c;
 						}
 					}
@@ -60,94 +82,79 @@ class Day08
 				connections.Add(min);
 			}
 		}
+
+		for (Connection connection in connections)
+		{
+			connectionsOut.Add(connection);
+		}
 	}
 
-	static void GenerateIsland(ref List<uint32> positions, List<Connection> connections, ref List<uint32> island)
+	static void MergeIslands(ref List<List<uint32>> islands, int i, int j)
 	{
-		island.Add(positions[positions.Count - 1]);
-		positions.Resize(positions.Count - 1);
-
-		uint32 index = 0;
-		while (index < island.Count)
+		for (int k = 0; k < islands[j].Count; k++)
 		{
-			for (let connection in connections)
-			{
-				if (connection.a == island[index])
-				{
-					if (!island.Contains(connection.b))
-					{
-						island.Add(connection.b);
-						positions.Remove(connection.b);
-					}
-				}
+			islands[i].Add(islands[j][k]);
+		}
 
-				if (connection.b == island[index])
+		delete islands[j];
+		islands.RemoveAt(j);
+	}
+
+	static void ProcessConnection(ref List<List<uint32>> islands, Connection connection)
+	{
+		for (int islandIndex = islands.Count - 1; islandIndex >= 0; islandIndex--)
+		{
+			List<uint32> island = islands[islandIndex];
+
+			if (island.Contains(connection.a) && island.Contains(connection.b))
+			{
+				// do nothing
+			}
+			else if (island.Contains(connection.a))
+			{
+				for (int i = 0; i < islandIndex; i++)
 				{
-					if (!island.Contains(connection.a))
+					if (islands[i].Contains(connection.b))
 					{
-						island.Add(connection.a);
-						positions.Remove(connection.a);
+						MergeIslands(ref islands, i, islandIndex);
 					}
 				}
 			}
-
-			index++;
-		}
-	}
-
-	static void GenerateCircuits(uint32 count, List<Connection> connections, ref uint32[] largest)
-	{
-		var positions = scope List<uint32>();
-		for (uint32 i = 0; i < count; i++)
-		{
-			positions.Add(i);
-		}
-
-		while (!positions.IsEmpty)
-		{
-			var island = scope List<uint32>();
-			GenerateIsland(ref positions, connections, ref island);
-
-			if (island.Count > largest[2])
+			else if (island.Contains(connection.b))
 			{
-				if (island.Count > largest[1])
+				for (int i = 0; i < islandIndex; i++)
 				{
-					largest[2] = largest[1];
-
-					if (island.Count > largest[0])
+					if (islands[i].Contains(connection.a))
 					{
-						largest[1] = largest[0];
-						largest[0] = (uint32)island.Count;
+						MergeIslands(ref islands, i, islandIndex);
 					}
-					else
-					{
-						largest[1] = (uint32)island.Count;
-					}
-				}
-				else
-				{
-					largest[2] = (uint32)island.Count;
 				}
 			}
 		}
 	}
 
-	static Connection FindLargest(List<Position> positions, ref uint32[] largest, uint32 count)
+	static Connection ProcessConnections(ref List<List<uint32>> islands, List<Connection> connections)
+	{
+		for (uint32 i = 0; i < connections.Count; i++)
+		{
+			Connection connection = connections[i];
+			ProcessConnection(ref islands, connection);
+
+			if (islands.Count == 1)
+			{
+				return connection;
+			}
+		}
+
+		return Connection();
+	}
+
+	static Connection ProcessConnections(ref List<List<uint32>> islands, List<Position> positions, uint32 count)
 	{
 		var connections = scope List<Connection>();
 		GenerateConnections(positions, connections, count);
 
-		GenerateCircuits((uint32)positions.Count, connections, ref largest);
-
-		if (connections.IsEmpty)
-		{
-			Connection c;
-			c.a = 0;
-			c.b = 0;
-			return c;
-		}
-
-		return connections[connections.Count - 1];
+		return ProcessConnections(ref islands, connections);
 	}
 
 	static public void Execute(List<String> lines, bool isPartB)
@@ -173,42 +180,51 @@ class Day08
 			positions.Add(pos);
 		}
 
+		// prepare all islands, 1 item per island
+		var islands = new List<List<uint32>>();
+		for (uint32 i = 0; i < positions.Count; i++)
+		{
+			var island = new List<uint32>();
+			island.Add(i);
+			islands.Add(island);
+		}
+
 		if (!isPartB)
 		{
+			ProcessConnections(ref islands, positions, 1000);
+
 			var largest = scope uint32[3];
-			FindLargest(positions, ref largest, 1000);
+			for (int i = 0; i < 3; i++)
+			{
+				uint32 max = 0;
+				for (uint32 j = 0; j < islands.Count; j++)
+				{
+					if (islands[j].Count > islands[max].Count)
+					{
+						max = j;
+					}
+				}
+
+				largest[i] = (uint32)islands[max].Count;
+
+				delete islands[max];
+				islands.RemoveAt(max);
+			}
 
 			uint32 count = largest[0] * largest[1] * largest[2];
-
 			Console.WriteLine("Count is {}", count);
 		}
 		else
 		{
-			uint32 cur = 0;
-			uint32 step = 1000;
-			while (true)
-			{
-				Console.Write("Current is {}", cur);
-				var largest = scope uint32[3];
-				Connection c = FindLargest(positions, ref largest, cur);
-				Console.WriteLine("  has {} items in biggest.", largest[0]);
-
-				if (largest[0] == positions.Count)
-				{
-					if (step > 1)
-					{
-						cur -= step;
-						step /= 10;
-					}
-					else
-					{
-						Console.WriteLine("Count is {}", (uint32)positions[c.a].x * (uint32)positions[c.b].x);
-						break;
-					}
-				}
-
-				cur += step;
-			}
+			// assume 10 000 is big enough
+			Connection c = ProcessConnections(ref islands, positions, 10000);
+			Console.WriteLine("Count is {}", (uint32)positions[c.a].x * (uint32)positions[c.b].x);
 		}
+
+		for (var island in islands)
+		{
+			delete island;
+		}
+		delete islands;
 	}
 }
