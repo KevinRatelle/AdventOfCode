@@ -5,32 +5,50 @@ using System.Collections;
 
 class Day10
 {
+	const public uint8 k_max = 10;
+
 	struct Button
 	{
-		public List<uint8> m_targets;
+		public uint8[k_max] m_targets;
+		public uint8 m_count;
 
 		public this()
 		{
-			m_targets = new List<uint8>();
+			m_count = 0;
+			m_targets = .(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		}
 
-		public void Clear()
+		public void Add(uint8 target) mut
 		{
-			delete m_targets;
+			m_targets[m_count++] = target;
 		}
 	}
 
 	struct Machine
 	{
-		public List<bool> m_state;
-		public List<bool> m_target;
 		public List<Button> m_buttons;
 
-		public void PressButton(uint32 button)
+		public bool[k_max] m_state;
+		public bool[k_max] m_target;
+
+		public int16[k_max] m_voltState;
+		public int16[k_max] m_voltTarget;
+
+		public void PressButton(uint32 button) mut
 		{
-			for (let target in m_buttons[button].m_targets)
+			for (let targetIndex in (0 ... m_buttons[button].m_count - 1))
 			{
+				let target = m_buttons[button].m_targets[targetIndex];
 				m_state[target] = !m_state[target];
+			}
+		}
+
+		public void PressVoltButton(uint32 button) mut
+		{
+			for (let targetIndex in (0 ... m_buttons[button].m_count - 1))
+			{
+				let target = m_buttons[button].m_targets[targetIndex];
+				m_voltState[target]++;
 			}
 		}
 
@@ -47,34 +65,26 @@ class Day10
 			return true;
 		}
 
-		public this()
-		{
-			m_state = new List<bool>();
-			m_target = new List<bool>();
-			m_buttons = new List<Button>();
-		}
-
 		public void Clear()
 		{
-			delete m_state;
-			delete m_target;
-			for (var button in m_buttons)
-			{
-				button.Clear();
-			}
 			delete m_buttons;
 		}
 
 		public this(StringView line)
 		{
-			m_state = new List<bool>();
-			m_target = new List<bool>();
 			m_buttons = new List<Button>();
+
+			m_state = .(false, false, false, false, false, false, false, false, false, false);
+			m_target = m_state;
+
+			m_voltState = .(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+			m_voltTarget = m_voltState;
 
 			for (int32 c = 0; c < line.Length; c++)
 			{
 				if (line[c] == '[')
 				{
+					uint8 cur = 0;
 					for (c = c + 1; c < line.Length; c++)
 					{
 						if (line[c] == ']')
@@ -85,14 +95,14 @@ class Day10
 
 						if (line[c] == '.')
 						{
-							m_target.Add(false);
+							m_target[cur] = false;
 						}
 						else if (line[c] == '#')
 						{
-							m_target.Add(true);
+							m_target[cur] = true;
 						}
 
-						m_state.Add(false);
+						m_state[cur++] = false;
 					}
 				}
 
@@ -108,11 +118,12 @@ class Day10
 						}
 						else if (line[c] == ')')
 						{
+							c++;
 							break;
 						}
 						else
 						{
-							button.m_targets.Add(uint8.Parse(line[c ... c]));
+							button.Add(uint8.Parse(line[c ... c]));
 						}
 					}
 
@@ -121,13 +132,30 @@ class Day10
 
 				if (line[c] == '{')
 				{
-					break;
+					uint8 cur = 0;
+					for (c = c + 1; c < line.Length; c++)
+					{
+						if (line[c] == ',')
+						{
+							// nothing
+						}
+						else if (line[c] == '}')
+						{
+							c++;
+							break;
+						}
+						else
+						{
+							//m_voltTarget[cur] = int16.Parse(line[c ... c]);
+							//m_voltState[cur++] = 0;
+						}
+					}
 				}
 			}
 		}
 	}
 
-	static void ComputeMinimumCount(Machine machine, uint32 countin, ref uint32 depth)
+	static void ComputeMinimumCount(ref Machine machine, uint32 countin, ref uint32 depth)
 	{
 		uint32 count = countin;
 
@@ -150,7 +178,7 @@ class Day10
 		for (uint32 button = 0; button < machine.m_buttons.Count; button++)
 		{
 			machine.PressButton(button);
-			ComputeMinimumCount(machine, count, ref depth);
+			ComputeMinimumCount(ref machine, count, ref depth);
 			machine.PressButton(button); // untoggle after done
 		}
 	}
@@ -168,7 +196,7 @@ class Day10
 			var machine = Machine(line);
 			uint32 minimumCount = 0;
 			uint32 depth = 1000;
-			ComputeMinimumCount(machine, minimumCount, ref depth);
+			ComputeMinimumCount(ref machine, minimumCount, ref depth);
 			Runtime.Assert(depth != 1000);
 			count += depth;
 			machine.Clear();
