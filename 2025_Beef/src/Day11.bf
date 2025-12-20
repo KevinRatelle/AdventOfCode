@@ -27,6 +27,10 @@ class Day11
 	static uint32 CountPaths(List<Connection> connections, int current, StringView target)
 	{
 		uint32 pathCount = 0u;
+		if (current == -1)
+		{
+			return pathCount;
+		}
 
 		Connection connection = connections[current];
 		for (var child in connection.m_outputs)
@@ -41,6 +45,47 @@ class Day11
 				pathCount += CountPaths(connections, index, target);
 			}
 		}
+
+		return pathCount;
+	}
+
+	static uint64 CountPathsFastInternal(List<Connection> connections, int current, StringView target, Dictionary<int, uint64> dict)
+	{
+		uint64 pathCount = 0u;
+		if (current == -1)
+		{
+			return pathCount;
+		}
+
+		if (dict.ContainsKey(current))
+		{
+			return dict[current];
+		}
+
+		Connection connection = connections[current];
+		for (var child in connection.m_outputs)
+		{
+			if (child == target)
+			{
+				pathCount++;
+			}
+			else
+			{
+				int index = FindInput(connections, child);
+				pathCount += CountPathsFastInternal(connections, index, target, dict);
+			}
+		}
+
+		dict[current] = pathCount;
+
+		return pathCount;
+	}
+
+	static uint64 CountPathsFast(List<Connection> connections, int current, StringView target)
+	{
+		var dict = new Dictionary<int, uint64>();
+		uint64 pathCount = CountPathsFastInternal(connections, current, target, dict);
+		delete dict;
 
 		return pathCount;
 	}
@@ -66,8 +111,28 @@ class Day11
 			connections.Add(connection);
 		}
 
-		int startIndex = FindInput(connections, "you");
-		uint32 pathCount = CountPaths(connections, startIndex, "out");
+		uint64 pathCount = 0;
+		if (!isPartB)
+		{
+			int startIndex = FindInput(connections, "you");
+			pathCount = CountPaths(connections, startIndex, "out");
+		}
+		else
+		{
+			int svr = FindInput(connections, "svr");
+			int fft = FindInput(connections, "fft");
+			int dac = FindInput(connections, "dac");
+
+			uint64 dac_fft = CountPathsFast(connections, dac, "fft");
+			uint64 svr_dac = CountPathsFast(connections, svr, "dac");
+			uint64 fft_out = CountPathsFast(connections, fft, "out");
+			pathCount += svr_dac * dac_fft * fft_out;
+
+			uint64 dac_out = CountPathsFast(connections, dac, "out");
+			uint64 fft_dac = CountPathsFast(connections, fft, "dac");
+			uint64 svr_fft = CountPathsFast(connections, svr, "fft");
+			pathCount += svr_fft * fft_dac * dac_out;
+		}
 
 		for (Connection connection in connections)
 		{
